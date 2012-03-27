@@ -1,7 +1,7 @@
 Index: ibus-chewing/CMakeLists.txt
 ===================================================================
---- ibus-chewing.orig/CMakeLists.txt	2012-03-27 10:15:29.158400784 +0800
-+++ ibus-chewing/CMakeLists.txt	2012-03-27 13:22:38.698085063 +0800
+--- ibus-chewing.orig/CMakeLists.txt	2012-03-27 13:25:44.567006744 +0800
++++ ibus-chewing/CMakeLists.txt	2012-03-27 13:26:30.791235954 +0800
 @@ -71,7 +71,7 @@
  PKG_CHECK_MODULES(CHEWING chewing>=0.3.2)
  EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=datadir chewing
@@ -13,8 +13,8 @@ Index: ibus-chewing/CMakeLists.txt
  FIND_PROGRAM(GOB2 gob2)
 Index: ibus-chewing/src/main.c
 ===================================================================
---- ibus-chewing.orig/src/main.c	2012-03-27 00:55:45.671869277 +0800
-+++ ibus-chewing/src/main.c	2012-03-27 13:21:24.705718154 +0800
+--- ibus-chewing.orig/src/main.c	2012-03-27 13:25:44.567006744 +0800
++++ ibus-chewing/src/main.c	2012-03-27 13:26:30.791235954 +0800
 @@ -163,7 +163,7 @@
      if (showFlags){
          printf("PROJECT_NAME=" quote_me(PROJECT_NAME) "\n");
@@ -24,3 +24,18 @@ Index: ibus-chewing/src/main.c
      }else{
          start_component ();
      }
+Index: ibus-chewing/src/IBusChewingEngine.gob
+===================================================================
+--- ibus-chewing.orig/src/IBusChewingEngine.gob	2011-10-12 19:50:51.000000000 +0800
++++ ibus-chewing/src/IBusChewingEngine.gob	2012-03-27 13:28:35.351853613 +0800
+@@ -248,8 +248,8 @@
+ 	    gchar buf[100];
+ 	    g_snprintf(buf,100,"%s/.chewing",getenv("HOME"));
+ 
+-	    G_DEBUG_MSG(6,"[I6] init() CHEWING_DATA_DIR=%s",  quote_me(CHEWING_DATA_DIR) );
+-	    chewing_Init(quote_me(CHEWING_DATA_DIR), buf);
++	    G_DEBUG_MSG(6,"[I6] init() CHEWING_DATA_DIR=%s", CHEWING_DATA_DIR);
++	    chewing_Init(CHEWING_DATA_DIR, buf);
+ 
+ 	    self->context=chewing_new();
+ 	    chewing_set_ChiEngMode(self->context,CHINESE_MODE);
