@@ -2,6 +2,13 @@
 %:
 	dh $@
 
+clean_tree:
+	dh_auto_clean
+	dh_clean
+	-quilt pop -a
+	rm -rf CMakeFiles Modules NO_PACK Testing bin po/CMakeFiles
+	git checkout -- *
+
 override_dh_auto_configure:
 	cmake -DCMAKE_INSTALL_PREFIX="/usr" \
 		-DCMAKE_VERBOSE_MAKEFILE=ON \
