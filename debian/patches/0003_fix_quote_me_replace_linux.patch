@@ -1,0 +1,26 @@
+Index: ibus-chewing/CMakeLists.txt
+===================================================================
+--- ibus-chewing.orig/CMakeLists.txt	2012-03-27 10:15:29.158400784 +0800
++++ ibus-chewing/CMakeLists.txt	2012-03-27 13:22:38.698085063 +0800
+@@ -71,7 +71,7 @@
+ PKG_CHECK_MODULES(CHEWING chewing>=0.3.2)
+ EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=datadir chewing
+     OUTPUT_VARIABLE CHEWING_DATA_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+-SET_COMPILE_ENV(CHEWING_DATA_DIR "${CHEWING_DATA_DIR}" DISPLAY PATH
++SET_COMPILE_ENV(CHEWING_DATA_DIR \"${CHEWING_DATA_DIR}\" DISPLAY PATH
+     "Chewing data dir")
+ 
+ FIND_PROGRAM(GOB2 gob2)
+Index: ibus-chewing/src/main.c
+===================================================================
+--- ibus-chewing.orig/src/main.c	2012-03-27 00:55:45.671869277 +0800
++++ ibus-chewing/src/main.c	2012-03-27 13:21:24.705718154 +0800
+@@ -163,7 +163,7 @@
+     if (showFlags){
+         printf("PROJECT_NAME=" quote_me(PROJECT_NAME) "\n");
+         printf("DATA_DIR=" quote_me(DATA_DIR) "\n");
+-        printf("CHEWING_DATA_DIR=" quote_me(CHEWING_DATA_DIR) "\n");
++        printf("CHEWING_DATA_DIR=" CHEWING_DATA_DIR "\n");
+     }else{
+         start_component ();
+     }
