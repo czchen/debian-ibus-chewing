@@ -4,7 +4,7 @@
 
 override_dh_auto_clean:
 	dh_auto_clean
-	rm -rf CMakeFiles Modules NO_PACK Testing bin po/CMakeFiles
+	rm -rf CMakeFiles NO_PACK Testing bin po/CMakeFiles
 	cp debian/po-bak/* po/
 
 override_dh_auto_configure:
