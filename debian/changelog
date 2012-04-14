@@ -1,11 +1,15 @@
 ibus-chewing (1.3.10+clean-3) unstable; urgency=low
 
+  [ YunQiang Su ]
   * fix quote_me of LIBCHEWING_DATA_DIR.
   * back and restore po files.
   * don't remove Modules when auto_clean.
   * Rebuild to work with multiarched libchewing (Closese: #668540).
 
- -- YunQiang Su <wzssyqa@gmail.com>  Fri, 13 Apr 2012 01:33:05 +0800
+  [ Asias He ]
+  * Bump Standards-Version to 3.9.3
+
+ -- Asias He <asias.hejun@gmail.com>  Sat, 14 Apr 2012 16:19:51 +0800
 
 ibus-chewing (1.3.10+clean-2) unstable; urgency=low
 
