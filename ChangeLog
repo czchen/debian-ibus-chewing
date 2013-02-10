@@ -1,4 +1,42 @@
-* Wed Oct 12 2011 - Ding-Yi Chen <dchen at redhat.com> - 1.3.10
+* Mon Nov 26 2012 Ding-Yi Chen <dchen at redhat.com> - 1.4.3
+- Fixed GitHub issue #30: Rework decorate_preedit
+  by merging pull request #30 from buganini
+- Fixed GitHub issue #31: Properly refresh property
+  by merging pull request #31 from buganini
+
+* Thu Aug 23 2012 Ding-Yi Chen <dchen at redhat.com> - 1.4.2
+- Fixed GitHub issue #7: highlighted text be cut after switch back to pure ibus
+  by merging pull request #24 from buganini
+- Fixed GitHub issue #20: Shift key will send duplicated strings
+  by merging pull request #22 from buganini
+- Fixed GitHub issue #21: somethings wrong with cmake
+- Fixed GitHub issue #25: Weird symbol when input with somethings highlighted
+  by merging pull request #26 from buganini
+- Fixed GitHub issue #27: Local path committed into tree
+- Fixed: Bug 713033 -  [zh_TW] ibus-chewing problem
+- Fixed: Bug 745371 -  ibus-chewing: mode confusion In Temporary English mode and Chinese mode later on
+- Fixed: Google Issue 1172: [ibus-chewing] move elf file to standard directory.
+- Fixed: Google Issue 1426: ibus-chewing-1.3.10 installs directory /gconf to root filesystem
+- Fixed: Google Issue 1428: ibus-chewing-1.3.10 fails to save it's settings
+- Fixed: Google Issue 1481: Some characters are missing when a long string in preedit buffer.
+- Fixed: Google Issue 1490: Cannot change INSTAL prefix for ibus-chewing-1.4.0
+
+* Mon Jul 23 2012 Ding-Yi Chen <dchen at redhat.com> - 1.4.0
+- Merge pull request #13 from hiroshiyui to Fix wrong data type conversion
+- Fixed: Google Issue 1079: Use shift key to switch to English mode in ibus-chewing
+  Also list as GitHub pull request #17
+- Fixed: Google Issue 1089: Ibus-chewing cause window flicker when compiz enabled
+- Fixed: Google Issue 1329, Github Issue 3: Merge with buganini at gmail.com
+- Fixed: Google Issue 1351: ibus-chewing 1.3.10 mistakenly send uncommitted charactor.
+- Fixed: Google Issue 1374: ibus-chewing: cannot save the preference with gnomeshell
+- Fixed: Google Issue 1427: ibus-chewing-1.3.10 is not compatible with ibus-1.4.0 and higher
+  Also list as GitHub pull request #16
+- Fixed: GitHub Issue 5: Word missing when with libchewing-0.3.3 and  ibus-chewing 1.3.10
+  Also list as GitHub pull request #15
+- Fixed: Launchpad bug: 1014456 bus-chewing deletes characters if too many of them are entered
+  Also list as GitHub pull request #19
+
+* Thu Dec 15 2011 - Ding-Yi Chen <dchen at redhat.com> - 1.3.10
 - Fixed Bug 726335 (Google issue 1281)- [abrt] ibus-chewing-1.3.9.2-3.fc15: g_atomic_int_get:
   Process /usr/libexec/ibus-engine-chewing was killed by signal 11 (SIGSEGV) using patch from Scott Tsai
 - Fixed Bug 727018 - ibus compose file needs a symbol tag for gnome-shell

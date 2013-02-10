@@ -27,12 +27,25 @@ guint ibus_chewing_engine_keycode_to_keysym(IBusChewingEngine *self, guint keysy
 gboolean ibus_chewing_engine_process_key_event(IBusEngine *engine,
 	guint keysym,  guint keycode, guint modifiers){
     gboolean result=TRUE;
+
+    IBusChewingEngine *self=IBUS_CHEWING_ENGINE(engine);
+    guint kSym=ibus_chewing_engine_keycode_to_keysym(self,keysym, keycode, modifiers);
+
     if (modifiers & IBUS_RELEASE_MASK){
+	if(!keysym_KP_to_normal(kSym) && (kSym==IBUS_Shift_L || kSym==IBUS_Shift_R) && self->_priv->key_last==kSym){
+		/* When Chi->Eng with incomplete character */
+		if (chewing_get_ChiEngMode(self->context) && !chewing_zuin_Check(self->context)){
+			/* chewing_zuin_Check==0 means incomplete character */
+			/* Send a space to finish the character */
+			chewing_handle_Space(self->context);
+		}
+		chewing_set_ChiEngMode(self->context, !chewing_get_ChiEngMode(self->context));
+		self_refresh_property(self,"chewing_chieng_prop");
+		return self_update(self);
+	}
 	/* Skip release event */
 	return TRUE;
     }
-    IBusChewingEngine *self=IBUS_CHEWING_ENGINE(engine);
-    guint kSym=ibus_chewing_engine_keycode_to_keysym(self,keysym, keycode, modifiers);
 
     G_DEBUG_MSG(2,"***[I2] process_key_event(-, %x(%s), %x, %x) orig keysym=%x... proceed.",kSym, keyName_get(kSym), keycode, modifiers,keysym);
     guint state= modifiers & (IBUS_SHIFT_MASK | IBUS_CONTROL_MASK | IBUS_MOD1_MASK);
@@ -84,9 +97,11 @@ gboolean ibus_chewing_engine_process_key_event(IBusEngine *engine,
 			 * Fix for space in Temporary English mode.
 			 */
 			chewing_handle_Space(self->context);
+			ibus_chewing_engine_set_status_flag(self,ENGINE_STATUS_NEED_COMMIT);
 		    }
 		    if (self->inputMode==CHEWING_INPUT_MODE_SELECTION_DONE ||
-			    self->inputMode==CHEWING_INPUT_MODE_BYPASS )
+			    self->inputMode==CHEWING_INPUT_MODE_BYPASS ||
+			    self->inputMode==CHEWING_INPUT_MODE_EDITING )
 			ibus_chewing_engine_set_status_flag(self,ENGINE_STATUS_NEED_COMMIT);
 		    break;
 		case IBUS_Page_Up:
@@ -291,12 +306,21 @@ void ibus_chewing_engine_property_activate(IBusEngine *engine, const gchar  *pro
 	/* Toggle Full <-> Half */
 	chewing_set_ShapeMode(self->context, !chewing_get_ShapeMode(self->context));
     }else if (strcmp(prop_name,"chewing_settings_prop")==0){
-	if (self->settings_prop->state==PROP_STATE_UNCHECKED){
+#if IBUS_CHECK_VERSION(1, 4, 0)
+	if (ibus_property_get_state(self->settings_prop)==PROP_STATE_UNCHECKED)
+#else
+	if (self->settings_prop->state==PROP_STATE_UNCHECKED)
+#endif
+	{
 	    if (gtk_dialog_run(GTK_DIALOG(self->setting_dialog))==GTK_RESPONSE_OK){
 		self_save_config_all(self);
 	    }
 	    gtk_widget_hide(self->setting_dialog);
+#if IBUS_CHECK_VERSION(1, 4, 0)
+		ibus_property_set_state(self->settings_prop,PROP_STATE_UNCHECKED);
+#else
 	    self->settings_prop->state=PROP_STATE_UNCHECKED;
+#endif
 	}
     }else{
 	G_DEBUG_MSG(3,"[I3]  property_activate(-, %s, %u) not recognized",prop_name, prop_state);
