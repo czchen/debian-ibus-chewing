@@ -1,3 +1,10 @@
+ibus-chewing (1.4.3-1) unstable; urgency=low
+
+  * Team upload.
+  * New upstream release.
+
+ -- Aron Xu <aron@debian.org>  Sun, 10 Feb 2013 16:20:40 +0800
+
 ibus-chewing (1.3.10+clean-3) unstable; urgency=low
 
   [ YunQiang Su ]
