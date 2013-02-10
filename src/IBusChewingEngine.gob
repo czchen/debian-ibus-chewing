@@ -339,7 +339,7 @@ class IBus:Chewing:Engine from IBus:Engine{
 	for (i=0; page_labels[i]!=NULL;i++){
 	    maker_dialog_align_labels(MAKER_DIALOG(self->setting_dialog),page_labels[i],1.0f, 0.5f);
 	}
-	gtk_widget_hide(self->setting_dialog);
+	gtk_widget_show_all(GTK_WIDGET(MAKER_DIALOG(self->setting_dialog)->dialog_notebook));
 #undef BUFFER_SIZE_LOCAL
     }
 
@@ -473,37 +473,64 @@ class IBus:Chewing:Engine from IBus:Engine{
 
 	gint cursorRight=0;
 	gint charLen=(gint) g_utf8_strlen(iText->text, -1);
-	switch(self->inputMode){
-	    case CHEWING_INPUT_MODE_SELECTING:
-		cursorRight=*chiSymbolCursor + MAX(zhuyin_item_written, 1);
-		break;
-	    case CHEWING_INPUT_MODE_EDITING:
-	    case CHEWING_INPUT_MODE_SELECTION_DONE:
-	    default: /* BYPASS */
-		cursorRight=*chiSymbolCursor + MAX(zhuyin_item_written, 1);
-		break;
-	}
+
+	cursorRight=*chiSymbolCursor + zhuyin_item_written;
 
 	G_DEBUG_MSG(5,"[I5]  decorate_preedit() charLen=%d cursorRight=%d", charLen, cursorRight);
-	if (*chiSymbolCursor< cursorRight){
-	    ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_FOREGROUND, 0x00ffffff,
-		    *chiSymbolCursor, cursorRight);
-	    ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_BACKGROUND, 0x00000000,
-		    *chiSymbolCursor, cursorRight);
-	}
 
 	IntervalType it;
 	chewing_interval_Enumerate(self->context);
-	while(chewing_interval_hasNext(self->context)){
-	    chewing_interval_Get(self->context,&it);
-	    G_DEBUG_MSG(6,"[I6]  decorate_preedit() it.from=%d it.to=%d", it.from, it.to);
-	    if (it.to-it.from >1){
-		ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_UNDERLINE, IBUS_ATTR_UNDERLINE_DOUBLE,
-			it.from, it.to);
-	    }
+
+	it.from=0;
+	it.to=charLen;
+	int phase=1;
+	int last=0;
+	int i;
+	if(chewing_interval_hasNext(self->context))
+		chewing_interval_Get(self->context,&it);
+
+	for(i=0;i<charLen;++i){
+		if(
+		    (i==it.from) ||
+		    (i==it.to-1) ||
+		    (*chiSymbolCursor==cursorRight && i==*chiSymbolCursor) ||
+		    (*chiSymbolCursor!=cursorRight && i==cursorRight-1)){
+			if((*chiSymbolCursor==cursorRight && i==*chiSymbolCursor) || (*chiSymbolCursor!=cursorRight && i==cursorRight-1)){
+				if(last < i+1){
+					ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_UNDERLINE, IBUS_ATTR_UNDERLINE_DOUBLE,
+					    last, i+1);
+					phase*=-1;
+					ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_FOREGROUND, 0x00ffffff,
+					    last, i+1);
+					ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_BACKGROUND, 0x00000000,
+					    last, i+1);
+				}
+				last=i+1;
+			}else if(i==it.to-1){
+				if(last < i+1){
+					ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_UNDERLINE, (phase>0)?IBUS_ATTR_UNDERLINE_SINGLE:IBUS_ATTR_UNDERLINE_LOW,
+					    last, i+1);
+					phase*=-1;
+				}
+				last=i+1;
+				if(chewing_interval_hasNext(self->context)){
+					chewing_interval_Get(self->context,&it);
+					if(it.from>=*chiSymbolCursor){
+						it.from+=zhuyin_item_written;
+						it.to+=zhuyin_item_written;
+					}
+				}
+			}else{
+				if(last < i){
+					ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_UNDERLINE, (phase>0)?IBUS_ATTR_UNDERLINE_SINGLE:IBUS_ATTR_UNDERLINE_LOW,
+					    last, i);
+					phase*=-1;
+				}
+				last=i;
+			}
+		}
 	}
-	ibus_text_append_attribute (iText, IBUS_ATTR_TYPE_UNDERLINE, IBUS_ATTR_UNDERLINE_SINGLE,
-		0, -1);
+
 	return iText;
     }
 
@@ -536,12 +563,19 @@ class IBus:Chewing:Engine from IBus:Engine{
 
     private void update_preedit(self, IBusText *preeditIText,gint chiSymbolCursor){
 	G_DEBUG_MSG(5,"[I5] update_preedit() text=%s statusFlags=%x", preeditIText->text, self->_priv->statusFlags);
+	int mode;
+	if(g_utf8_strlen(preeditIText->text, -1)>0)
+		mode=IBUS_ENGINE_PREEDIT_COMMIT;
+	else
+		mode=IBUS_ENGINE_PREEDIT_CLEAR;
+
+	ibus_engine_update_preedit_text (IBUS_ENGINE(self),SELF_GET_CLASS(self)->emptyText, 0, TRUE);
 	switch (self->_priv->inputStyle){
 	    case CHEWING_INPUT_STYLE_IN_APPLICATION:
-		ibus_engine_update_preedit_text_with_mode (IBUS_ENGINE(self),preeditIText, chiSymbolCursor, TRUE, IBUS_ENGINE_PREEDIT_COMMIT);
+		ibus_engine_update_preedit_text_with_mode (IBUS_ENGINE(self),preeditIText, chiSymbolCursor, TRUE, mode);
 		break;
 	    case CHEWING_INPUT_STYLE_IN_CANDIDATE:
-		ibus_engine_update_preedit_text_with_mode (IBUS_ENGINE(self),SELF_GET_CLASS(self)->emptyText, 0, TRUE,IBUS_ENGINE_PREEDIT_COMMIT);
+		ibus_engine_update_preedit_text_with_mode (IBUS_ENGINE(self),SELF_GET_CLASS(self)->emptyText, 0, TRUE, mode);
 		break;
 	}
 	G_DEBUG_MSG(5,"[I5]  update_preedit(): return");
@@ -784,7 +818,7 @@ class IBus:Chewing:Engine from IBus:Engine{
 	    }
 	}
 
-	if (chewing_buffer_Len(self->context)+ zhuyin_count==0){
+	if (totalChoice + chewing_buffer_Len(self->context) + zhuyin_count==0){
 	    /* If preedit buffer is empty, then enter BYPASS mode.*/
 	    /* So cursor keys can be used freely. */
 	    self->inputMode=CHEWING_INPUT_MODE_BYPASS;
@@ -838,7 +872,7 @@ class IBus:Chewing:Engine from IBus:Engine{
 	    self_commit(self);
 	    committed =TRUE;
 	}
-	if (chewing_buffer_Check(self->context)){
+	if (!chewing_buffer_Check(self->context)){
 	    /* Buffer is empty, safe to clear the ENGINE_STATUS_NEED_COMMIT */
 	    ibus_chewing_engine_clear_status_flag(self, ENGINE_STATUS_NEED_COMMIT);
 	}
@@ -1041,12 +1075,23 @@ class IBus:Chewing:Engine from IBus:Engine{
 	    /* Toggle Full <-> Half */
 	    chewing_set_ShapeMode(self->context, !chewing_get_ShapeMode(self->context));
 	}else if (strcmp(prop_name,"chewing_settings_prop")==0){
-	    if (self->settings_prop->state==PROP_STATE_UNCHECKED){
+#if IBUS_CHECK_VERSION(1, 4, 0)
+      if (ibus_property_get_state(self->settings_prop)==PROP_STATE_UNCHECKED)
+#else
+	    if (self->settings_prop->state==PROP_STATE_UNCHECKED)
+#endif
+      {
+
+		gtk_widget_show_all(self->setting_dialog);
 		if (gtk_dialog_run(GTK_DIALOG(self->setting_dialog))==GTK_RESPONSE_OK){
 		    self_save_config_all(self);
 		}
 		gtk_widget_hide(self->setting_dialog);
+#if IBUS_CHECK_VERSION(1, 4, 0)
+    ibus_property_set_state(self->settings_prop,PROP_STATE_UNCHECKED);
+#else
 		self->settings_prop->state=PROP_STATE_UNCHECKED;
+#endif
 	    }
 	}else{
 	    G_DEBUG_MSG(3,"[I3]  property_activate(-, %s, %u) not recognized",prop_name, prop_state);

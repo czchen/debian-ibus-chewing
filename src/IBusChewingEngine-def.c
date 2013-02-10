@@ -280,7 +280,7 @@ PropertySpec propSpecs[]={
 	N_("Escape key cleans the text in pre-edit-buffer."),
     },
     {G_TYPE_INT, "maxChiSymbolLen", "Editing", N_("Maximum Chinese characters"),
-	"20", NULL, NULL,  8, 40,
+	"20", NULL, NULL,  8, 50,
 	NULL, maxChiSymbolLen_set_callback,
 	0, 0, 0,
 	N_("Maximum Chinese characters in pre-edit buffer, including inputing Zhuyin symbols"),
@@ -395,10 +395,10 @@ GVariant *g_value_to_g_variant(GValue *gValue){
 	    gVar=g_variant_new_uint64(g_value_get_uint(gValue));
 	    break;
 	case G_TYPE_INT:
-	    gVar=g_variant_new_int32(g_value_get_uint(gValue));
+	    gVar=g_variant_new_int32(g_value_get_int(gValue));
 	    break;
 	case G_TYPE_INT64:
-	    gVar=g_variant_new_int64(g_value_get_uint(gValue));
+	    gVar=g_variant_new_int64(g_value_get_int(gValue));
 	    break;
 	case G_TYPE_STRING:
 	    gVar=g_variant_new_string(g_value_get_string(gValue));
