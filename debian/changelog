@@ -1,3 +1,13 @@
+ibus-chewing (1.4.3-2) experimental; urgency=low
+
+  * Team upload.
+  * cflags.patch from FC19.
+  * Fix debian/rules for the hardened build.
+  * Adjust libexecdir in line with other ibus packages.
+  * Build with ibus 1.5.3-4. 
+
+ -- Osamu Aoki <osamu@debian.org>  Tue, 03 Sep 2013 00:08:40 +0900
+
 ibus-chewing (1.4.3-1) unstable; urgency=low
 
   * Team upload.

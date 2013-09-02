@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -35,7 +35,7 @@
+ 
+ Chewing also support toned Hanyu pinyin input.")
+ 
+-SET(CMAKE_C_FLAGS "-Wall")
++SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+ 
+ SET(AUTHORS "Peng Huang, Ding-Yi Chen")
+ SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
