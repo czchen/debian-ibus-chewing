@@ -1,5 +1,1 @@
 0003_fix_quote_me_replace_linux.patch
-#0001-follow-ibus-property-abi-change.patch
-#0002-fix_focus_stealing.patch
-#1001-cmake-fedora-modules.patch
-ibus-chewing-1.4.3-cflags.patch
