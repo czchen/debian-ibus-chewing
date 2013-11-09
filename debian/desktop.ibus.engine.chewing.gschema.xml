@@ -1,0 +1,82 @@
+<schemalist>
+  <schema id="org.freedesktop.ibus.engine.chewing" path="/desktop/ibus/engine/chewing/">
+    <key name="kbtype" type="s">
+      <default>'default'</default>
+      <summary>Keyboard Type</summary>
+      <description>Select Zhuyin keyboard layout.</description>
+    </key>
+    <key name="selkeys" type="s">
+      <default>'1234567890'</default>
+      <summary>Selection keys</summary>
+      <description>Keys used to select candidate. For example "asdfghjkl;", press 'a' to select the 1st candidate, 's' for 2nd, and so on.</description>
+    </key>
+    <key name="hsuselkeytype" type="i">
+      <range min="1" max="2"/>
+      <default>1</default>
+      <summary>Hsu's selection key</summary>
+      <description>Hsu's keyboard selection keys, 1 for asdfjkl789, 2 for asdfzxcv89 .</description>
+    </key>
+    <key name="autoshiftcur" type="b">
+      <default>true</default>
+      <summary>Auto move cursor</summary>
+      <description>Automatically move cursor to next character.</description>
+    </key>
+    <key name="addphrasedirection" type="b">
+      <default>true</default>
+      <summary>Add phrases in front</summary>
+      <description>Add phrases in the front.</description>
+    </key>
+    <key name="easysymbolinput" type="b">
+      <default>true</default>
+      <summary>Easy symbol input</summary>
+      <description>Easy symbol input.</description>
+    </key>
+    <key name="esccleanallbuf" type="b">
+      <default>false</default>
+      <summary>Esc clean all buffer</summary>
+      <description>Escape key cleans the text in pre-edit-buffer.</description>
+    </key>
+    <key name="maxchisymbollen" type="i">
+      <range min="0" max="39"/>
+      <default>20</default>
+      <summary>Maximum Chinese characters</summary>
+      <description>Maximum Chinese characters in pre-edit buffer, including inputing Zhuyin symbols</description>
+    </key>
+    <key name="forcelowercaseenglish" type="b">
+      <default>false</default>
+      <summary>Force lowercase in En mode</summary>
+      <description>Ignore CapsLock status and input lowercase by default. It is handy if you wish to enter lowercase by default. Uppercase can still be inputted with Shift.</description>
+    </key>
+    <key name="synccapslocklocal" type="s">
+      <default>'keyboard'</default>
+      <summary>Sync between CapsLock and IM</summary>
+      <description>Occasionally, the CapsLock status does not match the IM, this option determines how these status be synchronized. Valid values: "disable": Do nothing. "keyboard": IM status follows keyboard status. "IM": Keyboard status follows IM status.</description>
+    </key>
+    <key name="numpadalwaysnumber" type="b">
+      <default>true</default>
+      <summary>Number pad always input number</summary>
+      <description>Always input numbers when number keys from key pad is inputted.</description>
+    </key>
+    <key name="plainzhuyin" type="b">
+      <default>false</default>
+      <summary>Plain Zhuyin mode</summary>
+      <description>In plain Zhuyin mode, automatic candidate selection and related options are disabled or ignored.</description>
+    </key>
+    <key name="candperpage" type="i">
+      <range min="8" max="10"/>
+      <default>10</default>
+      <summary>Candidate per page</summary>
+      <description>Number of candidate per page.</description>
+    </key>
+    <key name="phrasechoicerearward" type="b">
+      <default>true</default>
+      <summary>Choose phrases from backward</summary>
+      <description>Choose phrases from the back, without moving cursor.</description>
+    </key>
+    <key name="spaceasselection" type="b">
+      <default>false</default>
+      <summary>Space to select</summary>
+      <description>Press Space to select the candidate.</description>
+    </key>
+  </schema>
+</schemalist>
