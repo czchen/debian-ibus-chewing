@@ -1,3 +1,11 @@
+ibus-chewing (1.4.3-4) unstable; urgency=high
+
+  * CVE-2013-4509 (Closes: #730781)
+  * Update debian/watch
+  * Bump Standards-Version to 3.9.5
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@gmail.com>  Sat, 30 Nov 2013 21:49:05 +0800
+
 ibus-chewing (1.4.3-3) unstable; urgency=low
 
   * CMAKE should be OK without FC19 patch.

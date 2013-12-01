@@ -3,7 +3,8 @@ Section: utils
 Priority: optional
 Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
 Uploaders: Asias He <asias.hejun@gmail.com>,
- Osamu Aoki <osamu@debian.org>
+ Osamu Aoki <osamu@debian.org>,
+ ChangZhuo Chen (陳昌倬) <czchen@gmail.com>
 Build-Depends: debhelper (>= 9), 
  cmake,
  gob2 (>= 2.0.17),
@@ -14,7 +15,7 @@ Build-Depends: debhelper (>= 9),
  libgtk2.0-dev,
  libx11-dev,
  libxtst-dev
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Homepage: http://code.google.com/p/ibus
 Vcs-Git: git://anonscm.debian.org/pkg-ime/ibus-chewing.git
 Vcs-Browser: http://anonscm.debian.org/git/pkg-ime/ibus-chewing.git
