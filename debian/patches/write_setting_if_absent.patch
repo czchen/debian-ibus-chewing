@@ -1,0 +1,48 @@
+Description: Write setting if absent
+--- ibus-chewing-1.4.3.orig/src/IBusChewingEngine-def.c
++++ ibus-chewing-1.4.3/src/IBusChewingEngine-def.c
+@@ -633,3 +633,18 @@ static void key_send_fake_event(KeySym k
+ 
+ #endif
+ 
++void set_boolean_gvalue(GValue *gValue, const gchar *value) {
++    g_value_set_boolean(gValue, strcmp(value, "0"));
++}
++
++void set_uint_gvalue(GValue *gValue, const gchar *value) {
++    g_value_set_int(gValue, (gint) g_ascii_strtoll(value, NULL, 0));
++}
++
++void set_int_gvalue(GValue *gValue, const gchar *value) {
++    g_value_set_uint(gValue, (guint) g_ascii_strtoull(value, NULL, 0));
++}
++
++void set_string_gvalue(GValue *gValue, const gchar *value) {
++    g_value_set_string(gValue, value);
++}
+--- ibus-chewing-1.4.3.orig/src/IBusChewingEngine.gob
++++ ibus-chewing-1.4.3/src/IBusChewingEngine.gob
+@@ -325,6 +325,23 @@ class IBus:Chewing:Engine from IBus:Engi
+ 			(propSpecs[i].defaultValue)? propSpecs[i].defaultValue : ""
+ 			);
+ 		if (propSpecs[i].defaultValue){
++		    switch(propSpecs[i].valueType){
++			case G_TYPE_BOOLEAN:
++			    set_boolean_gvalue(&gValue, propSpecs[i].defaultValue);
++			    break;
++			case G_TYPE_UINT:
++			    set_uint_gvalue(&gValue, propSpecs[i].defaultValue);
++			    break;
++			case G_TYPE_INT:
++			    set_int_gvalue(&gValue, propSpecs[i].defaultValue);
++			    break;
++			case G_TYPE_STRING:
++			    set_string_gvalue(&gValue, propSpecs[i].defaultValue);
++			    break;
++			default:
++			    continue;
++		    }
++		    ibus_chewing_config_set_value(self->config, "engine/Chewing", propSpecs[i].key, &gValue);
+ 		    g_strlcpy(buf,propSpecs[i].defaultValue, BUFFER_SIZE_LOCAL);
+ 		}else{
+ 		    continue;

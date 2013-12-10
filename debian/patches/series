@@ -1,2 +1,3 @@
 0003_fix_quote_me_replace_linux.patch
 CVE-2013-4509.patch
+write_setting_if_absent.patch
