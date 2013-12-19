@@ -1,153 +1,183 @@
 # - Upload files to hosting services.
 # You can either use sftp, scp or supply custom command for upload.
-# The custom command should be in following format:
-#    cmd [OPTIONS] [url]
 #
 # This module defines following macros:
-#   MACRO(MANAGE_UPLOAD_MAKE_TARGET varPrefix fileAlias [uploadOptions])
-#   - Make a target for upload files.
-#     If <varPrefix>_HOST_ALIAS is not empty, the target is
-#     upload_${${varPrefix}_HOST_ALIAS}_${fileAlias}, otherwise, the target is
-#     upload_${${varPrefix}_HOST_ALIAS}_${fileAlias}
-#     Arguments:
-#     + varPrefix: Variable prefix
-#     + fileAlias: File alias which will be used as part of target name
-#     + uploadOptions: Options for the upload command
-#     Reads following variables:
-#     + <varPrefix>_CMD: Upload command
-#     + <varPrefix>_DEPENDS: Extra files that the upload load target depends on.
-#     + <varPrefix>_HOST_ALIAS: (Optional) Host alias which will be used as part of target name.
-#     + <varPrefix>_HOST_URL: Host URL
-#     + <varPrefix>_REMOTE_DIR: (Optional) Remote dir/
-#     + <varPrefix>_UPLOAD_FILES: Files to be uploaded. The target depends on these files.
-#     + <varPrefix>_UPLOAD_OPTIONS: Options for upload command.
-#     + <varPrefix>_USER: (Optional) User for uploading
+#   MANAGE_UPLOAD_TARGET(targetName 
+#     [COMMAND program ...] [ADD_CUSTOM_TARGET_ARGUMENTS])
+#   - Make an upload target using arbitrary command.
+#     This macro check whether the program after COMMAND exist,
+#     if program exists, then add the make target,
+#     if not, produce M_OFF warning.
+#     Parameters:
+#     + targetName: target name in make.
+#     + program: Program that does upload.
+#     + ADD_CUSTOM_TARGET_ARGUMENTS: Other ADD_CUSTOM_TARGET_ARGUMENTS
 #
-# This module defines following macros:
-#   MANAGE_UPLOAD_CMD(cmd fileAlias [USER user] [HOST_URL hostUrl]
-#     [HOST_ALIAS hostAlias] [UPLOAD_FILES files] [REMOTE_DIR remoteDir]
-#     [UPLOAD_OPTIONS options] [DEPENDS files])
-#   - Make a upload target for a upload command
-#     Arguments:
-#     + cmd: Command to do the
-#     + fileAlias: File alias which will be used as part of target name
-#     + DEPENDS files: Extra files that the upload load target depends on.
-#     + HOST_ALIAS hostAlias: (Optional) Host alias which will be used as part of target name.
-#     + HOST_URL hostUrl: Host URL
-#     + REMOTE_DIR remoteDir: (Optional) Remote dir/
-#     + UPLOAD_FILES files : Files to be uploaded. The target depends on these files.
-#     + UPLOAD_OPTIONS options: Options for upload command.
-#     + USER user: (Optional) User for uploading
+#   MANAGE_UPLOAD_SCP(targetName 
+#     [USER user] [HOST_URL url] [UPLOAD_FILES files]
+#     [REMOTE_DIR dir] [OPTIONS options] [DEPENDS files]
+#     [COMMENT comments])
+#   - Make an upload target using scp.
+#     This macro check whether scp exist,
+#     if program exists, then add the make target, if not, produce M_OFF warning.
+#     Parameters:
+#     + targetName: target name in make.
+#     + USER user: scp user. Note that if USER is used but user is not defined.
+#       It produces M_OFF warning.
+#     + HOST_URL url: scp server.
+#     + UPLOAD_FILES: Files to be uploaded. This will be in DEPENDS list.
+#     + REMOTE_DIR dir: Directory on the server.
+#     + OPTIONS options: scp options.
+#     + DEPENDS files: other files that should be in DEPENDS list.
+#     + COMMENT comments: Comment to be shown when building the target.
 #
-#   MANAGE_UPLOAD_SFTP(fileAlias [USER user] [HOST_URL hostUrl]
-#     [HOST_ALIAS hostAlias] [UPLOAD_FILES files] [REMOTE_DIR remoteDir]
-#     [UPLOAD_OPTIONS options] [DEPENDS files])
-#   - Make a upload target for sftp
-#     Arguments: See section MANAGE_UPLOAD_CMD
+#   MANAGE_UPLOAD_SFTP(targetName 
+#     [BATCH batchFile] [USER user] [HOST_URL url] [UPLOAD_FILES files]
+#     [REMOTE_DIR dir] [OPTIONS options] [DEPENDS files]
+#     [COMMENT comments])
+#   - Make an upload target using sftp.
+#     This macro check whether sftp exist,
+#     if program exists, then add the make target, if not, produce M_OFF warning.
+#     Parameters:
+#     + targetName: target name in make.
+#     + BATCH batchFile to be used in sftp. (sftp -b )
+#     + USER user: sftp user. Note that if USER is used but user is not defined.
+#       It produces M_OFF warning.
+#     + HOST_URL url: sftp server.
+#     + UPLOAD_FILES: Files to be uploaded. This will be in DEPENDS list.
+#     + REMOTE_DIR dir: Directory on the server.
+#     + OPTIONS options: sftp options.
+#     + DEPENDS files: other files that should be in DEPENDS list.
+#     + COMMENT comments: Comment to be shown when building the target.
 #
-#   MANAGE_UPLOAD_SCP(fileAlias [USER user] [HOST_URL hostUrl]
-#     [HOST_ALIAS hostAlias] [UPLOAD_FILES files] [REMOTE_DIR remoteDir]
-#     [UPLOAD_OPTIONS options] [DEPENDS files])
-#   - Make a upload target for scp
-#     Arguments: See section MANAGE_UPLOAD_CMD
+#   MANAGE_UPLOAD_FEDORAHOSTED(targetName 
+#     [USER user] [UPLOAD_FILES files] [OPTIONS options] [DEPENDS files]
+#     [COMMENT comments])
+#   - Make an upload target for uploading to FedoraHosted.
+#     Parameters:
+#     + targetName: target name in make.
+#     + USER user: scp user. Note that if USER is used but user is not defined.
+#       It produces M_OFF warning.
+#     + UPLOAD_FILES: Files to be uploaded. This will be in DEPENDS list.
+#     + OPTIONS options: scp options.
+#     + DEPENDS files: other files that should be in DEPENDS list.
+#     + COMMENT comments: Comment to be shown when building the target.
 #
-#   MANAGE_UPLOAD_FEDORAHOSTED(fileAlias [USER user]
+#   MANAGE_UPLOAD_SOURCEFORGE(targetName [BATCH batchFile] 
+#     [USER user] [UPLOAD_FILES files] [OPTIONS options] [DEPENDS files]
+#     [COMMENT comments])
 #     [UPLOAD_FILES files] [REMOTE_DIR remoteDir]
 #     [UPLOAD_OPTIONS options] [DEPENDS files])
-#   - Make a upload target for uploading to FedoraHosted
-#     Arguments: See section MANAGE_UPLOAD_CMD
-#
-#   MANAGE_UPLOAD_SOURCEFORGE(fileAlias [USER user]
-#     [UPLOAD_FILES files] [REMOTE_DIR remoteDir]
-#     [UPLOAD_OPTIONS options] [DEPENDS files])
-#   - Make a upload target for uploading to SourceForge
-#     Arguments: See section MANAGE_UPLOAD_CMD
+#   - Make an upload target for uploading to SourceForge
+#     Parameters:
+#     + targetName: target name in make.
+#     + BATCH batchFile to be used in sftp. (sftp -b )
+#     + USER user: sftp user. Note that if USER is used but user is not defined.
+#       It produces M_OFF warning.
+#     + UPLOAD_FILES: Files to be uploaded. This will be in DEPENDS list.
+#     + OPTIONS options: sftp options.
+#     + DEPENDS files: other files that should be in DEPENDS list.
+#     + COMMENT comments: Comment to be shown when building the target.
 #
 #
 
 IF(NOT DEFINED _MANAGE_UPLOAD_CMAKE_)
     SET(_MANAGE_UPLOAD_CMAKE_ "DEFINED")
     INCLUDE(ManageMessage)
+    INCLUDE(ManageVariable)
 
-    # MANAGE_UPLOAD_GET_OPTIONS cmd [USER user] [HOST_URL hostUrl] [HOST_ALIAS hostAlias]
-    #  [UPLOAD_FILES files] [REMOTE_DIR remoteDir] [UPLOAD_OPTIONS sftpOptions] [DEPENDS files]
-
-    MACRO(_MANAGE_UPLOAD_GET_OPTIONS varList varPrefix)
-	SET(_optName "")	## OPTION name
-	SET(_opt "")		## Variable that hold option values
-	SET(VALID_OPTIONS "USER" "HOST_URL" "HOST_ALIAS" "UPLOAD_FILES" "REMOTE_DIR" "UPLOAD_OPTIONS" "DEPENDS")
+    FUNCTION(MANAGE_UPLOAD_TARGET targetName)
+	SET(_cmd "")
+	SET(_state "")
 	FOREACH(_arg ${ARGN})
-	    LIST(FIND VALID_OPTIONS "${_arg}" _optIndex)
-	    IF(_optIndex EQUAL -1)
-		IF(NOT _optName STREQUAL "")
-		    ## Append to existing variable
-		    LIST(APPEND ${_opt} "${_arg}")
-		    SET(${_opt} "${_opt}" PARENT_SCOPE)
-		ENDIF(NOT _optName STREQUAL "")
-	    ELSE(_optIndex EQUAL -1)
-		## Obtain option name and variable name
-		LIST(GET VALID_OPTIONS  ${_optIndex} _optName)
-		SET(_opt "${varPrefix}_${_optName}")
-
-		## If variable is not in varList, then set cache and add it to varList
-		LIST(FIND ${varList} "${_opt}" _varIndex)
-		IF(_varIndex EQUAL -1)
-		    SET(${_opt} "" PARENT_SCOPE)
-		    LIST(APPEND ${varList} "${_opt}")
-		ENDIF(_varIndex EQUAL -1)
-	    ENDIF(_optIndex EQUAL -1)
+	    IF (_arg STREQUAL "COMMAND")
+		SET(_state "cmd")
+	    ELSE(_arg STREQUAL "COMMAND")
+		IF (_state STREQUAL "cmd")
+		    SET(_cmd "${_arg}")
+		    BREAK()
+		ENDIF(_state STREQUAL "cmd")
+	    ENDIF(_arg STREQUAL "COMMAND")
 	ENDFOREACH(_arg ${ARGN})
-    ENDMACRO(_MANAGE_UPLOAD_GET_OPTIONS varPrefix varList)
+	SET(_upload_target_missing_dependency 0)
+	FIND_PROGRAM_ERROR_HANDLING(UPLOAD_CMD
+	    ERROR_MSG " Upload target ${targetName} disabled."
+	    ERROR_VAR _upload_target_missing_dependency
+	    VERBOSE_LEVEL ${M_OFF}
+	    "${_cmd}"
+        )
+        IF(NOT _upload_target_missing_dependency)
+	    ADD_CUSTOM_TARGET(${targetName}
+		${ARGN}
+		)
+	ENDIF(NOT _upload_target_missing_dependency)
+    ENDFUNCTION(MANAGE_UPLOAD_TARGET targetName)
 
-    MACRO(MANAGE_UPLOAD_MAKE_TARGET varPrefix fileAlias)
-	SET(_target "upload")
-	IF(NOT "${varPrefix}_HOST_ALIAS" STREQUAL "")
-	    SET(_target "${_target}_${${varPrefix}_HOST_ALIAS}")
-	ENDIF(NOT "${varPrefix}_HOST_ALIAS" STREQUAL "")
-	SET(_target "${_target}_${fileAlias}")
+    MACRO(_MANAGE_UPLOAD_MAKE_URL var)
+	SET(${var} ${_opt_HOST_URL})
 
-	## Determine url for upload
-	IF(NOT "${varPrefix}_HOST_URL" STREQUAL "")
-	    IF("${varPrefix}_USER" STREQUAL "")
-		SET(UPLOAD_URL "${${varPrefix}_USER}@${${varPrefix}_HOST_URL}")
-	    ELSE("${varPrefix}_USER" STREQUAL "")
-		SET(UPLOAD_URL "${${varPrefix}_HOST_URL}")
-	    ENDIF("${varPrefix}_USER" STREQUAL "")
-	ELSE(NOT "${varPrefix}_HOST_URL" STREQUAL "")
-	    SET(UPLOAD_URL "")
-	ENDIF(NOT "${varPrefix}_HOST_URL" STREQUAL "")
+	IF(NOT "${_opt_USER}" STREQUAL "")
+	    SET(${var} "${_opt_USER}@${${var}}")
+	ENDIF(NOT "${_opt_USER}" STREQUAL "")
 
-	IF(NOT "${varPrefix}_REMOTE_DIR" STREQUAL "")
-	    SET(UPLOAD_URL "${UPLOAD_URL}:${${varPrefix}_REMOTE_DIR}")
-	ENDIF(NOT "${varPrefix}_REMOTE_DIR" STREQUAL "")
+	IF(NOT "${_opt_REMOTE_DIR}" STREQUAL "")
+	    SET(${var} "${${var}}:${_opt_REMOTE_DIR}")
+	ENDIF(NOT "${_opt_REMOTE_DIR}" STREQUAL "")
+    ENDMACRO(_MANAGE_UPLOAD_MAKE_URL var)
 
-	ADD_CUSTOM_TARGET(${_target}
-	    COMMAND ${${varPrefix}_UPLOAD_CMD} ${${varPrefix}_UPLOAD_OPTIONS} ${ARGN} ${UPLOAD_URL}
-	    DEPENDS ${${varPrefix}_UPLOAD_FILES} ${${varPrefix}_DEPENDS}
-	    ${_DEPENDS}
-	    COMMENT "${${varPrefix}_HOST_ALIAS} uploading ${fileAlias}."
+    FUNCTION(MANAGE_UPLOAD_SCP targetName)
+	SET(_validOptions  "USER" "HOST_URL" "UPLOAD_FILES" "REMOTE_DIR" "OPTIONS" "DEPENDS" "COMMENT")
+	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+	IF("${_opt_HOST_URL}" STREQUAL "")
+	    M_MSG(${M_ERROR} "HOST_URL is required.")
+	ENDIF("${_opt_HOST_URL}" STREQUAL "")
+	IF("${_opt_UPLOAD_FILES}" STREQUAL "")
+	    M_MSG(${M_ERROR} "UPLOAD_FILES is required.")
+	ENDIF("${_opt_UPLOAD_FILES}" STREQUAL "")
+	_MANAGE_UPLOAD_MAKE_URL(_uploadUrl)
+
+	IF("${_opt_COMMENT}" STREQUAL "")
+	    SET(_comment "${targetName}: Uploading to ${_uploadUrl}")
+	ELSE("${_opt_COMMENT}" STREQUAL "")
+	    SET(_comment "${_opt_COMMENT}")
+	ENDIF("${_opt_COMMENT}" STREQUAL "")
+
+	MANAGE_UPLOAD_TARGET(${targetName}
+	    COMMAND scp ${_opt_OPTIONS} ${_opt_UPLOAD_FILES} ${_uploadUrl}
+	    DEPENDS ${_opt_UPLOAD_FILES} ${_opt_DEPENDS}
+	    COMMENT ${_comment}
 	    VERBATIM
 	    )
-    ENDMACRO(MANAGE_UPLOAD_MAKE_TARGET varPrefix fileAlias)
-
-    FUNCTION(MANAGE_UPLOAD_CMD cmd fileAlias)
-	FIND_PROGRAM(UPLOAD_CMD "${cmd}")
-	IF(UPLOAD_CMD STREQUAL "UPLOAD_CMD-NOTFOUND")
-	    M_MSG(${M_OFF} "Program ${cmd} is not found! Upload with ${cmd} disabled.")
-	ELSE(UPLOAD_CMD STREQUAL "UPLOAD_CMD-NOTFOUND")
-	    _MANAGE_UPLOAD_GET_OPTIONS(varList "upload_${fileAlias}" ${ARGN})
-	    SET(upload_UPLOAD_CMD ${UPLOAD_CMD})
-	    MANAGE_UPLOAD_MAKE_TAGET("upload" "${fileAlias}")
-	ENDIF(UPLOAD_CMD STREQUAL "UPLOAD_CMD-NOTFOUND")
-    ENDFUNCTION(MANAGE_UPLOAD_CMD cmd fileAlias)
-
-    FUNCTION(MANAGE_UPLOAD_SFTP fileAlias)
-	MANAGE_UPLOAD_CMD(sftp ${fileAlias} ${ARGN})
-    ENDFUNCTION(MANAGE_UPLOAD_SFTP fileAlias)
-
-    FUNCTION(MANAGE_UPLOAD_SCP fileAlias)
-	MANAGE_UPLOAD_CMD(scp ${fileAlias} ${ARGN})
     ENDFUNCTION(MANAGE_UPLOAD_SCP fileAlias)
+
+    FUNCTION(MANAGE_UPLOAD_SFTP targetName)
+	SET(_validOptions  "USER" "HOST_URL" "UPLOAD_FILES" "REMOTE_DIR" "OPTIONS" "DEPENDS" "COMMENT" "BATCH")
+	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+	IF("${_opt_HOST_URL}" STREQUAL "")
+	    M_MSG(${M_ERROR} "HOST_URL is required.")
+	ENDIF("${_opt_HOST_URL}" STREQUAL "")
+	IF("${_opt_UPLOAD_FILES}" STREQUAL "")
+	    M_MSG(${M_ERROR} "UPLOAD_FILES is required.")
+	ENDIF("${_opt_UPLOAD_FILES}" STREQUAL "")
+	_MANAGE_UPLOAD_MAKE_URL(_uploadUrl)
+
+	IF("${_opt_COMMENT}" STREQUAL "")
+	    SET(_comment "${targetName}: Uploading to ${_uploadUrl}")
+	ELSE("${_opt_COMMENT}" STREQUAL "")
+	    SET(_comment "${_opt_COMMENT}")
+	ENDIF("${_opt_COMMENT}" STREQUAL "")
+
+	IF(NOT "${_opt_BATCH}" STREQUAL "")
+	    SET(_batch "-b" "${_opt_BATCH}")
+	ENDIF(NOT "${_opt_BATCH}" STREQUAL "")
+
+	MANAGE_UPLOAD_TARGET(${targetName}
+	    COMMAND sftp ${_batch} ${_opt_OPTIONS} ${_opt_UPLOAD_FILES} ${_uploadUrl}
+	    DEPENDS ${_opt_UPLOAD_FILES} ${_opt_DEPENDS}
+	    COMMENT ${_comment}
+	    VERBATIM
+	    )
+    ENDFUNCTION(MANAGE_UPLOAD_SFTP fileAlias)
 
     #MACRO(MANAGE_UPLOAD_GOOGLE_UPLOAD)
     #	FIND_PROGRAM(CURL_CMD curl)
@@ -155,30 +185,17 @@ IF(NOT DEFINED _MANAGE_UPLOAD_CMAKE_)
     #	    MESSAGE(FATAL_ERROR "Need curl to perform google upload")
     #	ENDIF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
     #ENDMACRO(MANAGE_UPLOAD_GOOGLE_UPLOAD)
-    FUNCTION(MANAGE_UPLOAD_FEDORAHOSTED fileAlias)
-	FIND_PROGRAM(fedorahosted_${fileAlias}_UPLOAD_CMD "scp")
-	IF(fedorahosted_${fileAlias}_UPLOAD_CMD STREQUAL "fedorahosted_${fileAlias}_UPLOAD_CMD-NOTFOUND")
-	    M_MSG(${M_OFF} "Program ${cmd} is not found! Upload with fedorahost disabled.")
-	ELSE(fedorahosted_${fileAlias}_UPLOAD_CMD STREQUAL "fedorahosted_${fileAlias}_UPLOAD_CMD-NOTFOUND")
-	    _MANAGE_UPLOAD_GET_OPTIONS(varList "fedorahosted_${fileAlias}" HOST_ALIAS "fedorahosted"
-		HOST_URL "fedorahosted.org" REMOTE_DIR  "${PROJECT_NAME}" ${ARGN})
-	MANAGE_UPLOAD_MAKE_TARGET("fedorahosted_${fileAlias}" "${fileAlias}" ${fedorahosted_${fileAlias}_UPLOAD_FILES})
-	ENDIF(fedorahosted_${fileAlias}_UPLOAD_CMD STREQUAL "fedorahosted_${fileAlias}_UPLOAD_CMD-NOTFOUND")
+    FUNCTION(MANAGE_UPLOAD_FEDORAHOSTED targetName)
+	MANAGE_UPLOAD_SCP(${targetName} 
+	    HOST_URL "fedorahosted.org" REMOTE_DIR  "${PROJECT_NAME}"
+	    ${ARGN})
     ENDFUNCTION(MANAGE_UPLOAD_FEDORAHOSTED fileAlias)
 
-    FUNCTION(MANAGE_UPLOAD_SOURCEFORGE_FILE_RELEASE fileAlias)
-	FIND_PROGRAM(sourceforge_${fileAlias}_UPLOAD_CMD "sftp")
-	IF(sourceforge_${fileAlias}_UPLOAD_CMD STREQUAL "sourceforge_${fileAlias}_UPLOAD_CMD-NOTFOUND")
-	    M_MSG(${M_OFF} "Program ${cmd} is not found! Upload with sourceforge disabled.")
-	ELSE(sourceforge_${fileAlias}_UPLOAD_CMD STREQUAL "sourceforge_${fileAlias}_UPLOAD_CMD-NOTFOUND")
-	    _MANAGE_UPLOAD_GET_OPTIONS(varList "sourceforge_${fileAlias}" ${ARGN} HOST_ALIAS "sourceforge"
-	        HOST_URL "frs.sourceforge.net")
-	    IF(sourceforge_${fileAlias}_USER)
-		SET(sourceforge_${fileAlias}_REMOTE_DIR "/home/frs/project/${PROJECT_NAME}")
-	    ENDIF(sourceforge_${fileAlias}_USER)
-	    SET("sourceforge_${fileAlias}_UPLOAD_CMD" "sftp")
-	MANAGE_UPLOAD_MAKE_TARGET("sourceforge_${fileAlias}" "${fileAlias}")
-    ENDIF(sourceforge_${fileAlias}_UPLOAD_CMD STREQUAL "sourceforge_${fileAlias}_UPLOAD_CMD-NOTFOUND")
-    ENDFUNCTION(MANAGE_UPLOAD_SOURCEFORGE_FILE_RELEASE fileAlias)
+    FUNCTION(MANAGE_UPLOAD_SOURCEFORGE targetName)
+       	MANAGE_UPLOAD_SFTP(${targetName} 
+	    HOST_URL "frs.sourceforge.net" 
+	    REMOTE_DIR  "/home/frs/project/${PROJECT_NAME}"
+	    ${ARGN})
+    ENDFUNCTION(MANAGE_UPLOAD_SOURCEFORGE fileAlias)
 ENDIF(NOT DEFINED _MANAGE_UPLOAD_CMAKE_)
 

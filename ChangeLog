@@ -1,3 +1,11 @@
+* Wed Dec 18 2013 Ding-Yi Chen <dchen at redhat.com> - 1.4.4
+- Resolves Bug 842856 - ibus-chewing 1.4.3-1 not built with $RPM_OPT_FLAGS
+- Resolves Bug 1027030 - CVE-2013-4509 ibus-chewing: ibus: visible 
+  password entry flaw [fedora-all]
+  Thanks czchen for the GitHub pull request 39.
+- Added translations: fr_FR, ja_JP, ko_KR
+- Adopt cmake-fedora-1.2.0
+
 * Mon Nov 26 2012 Ding-Yi Chen <dchen at redhat.com> - 1.4.3
 - Fixed GitHub issue #30: Rework decorate_preedit
   by merging pull request #30 from buganini

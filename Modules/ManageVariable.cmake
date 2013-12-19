@@ -8,7 +8,9 @@
 #   PackRPM
 #
 # Defines following functions:
-#   SETTING_STRING_GET_VARIABLE(var value str [NOUNQUOTE] [NOREPLACE] [setting_sign])
+#   SETTING_STRING_GET_VARIABLE(var value str 
+#     [NOUNQUOTE] [NOREPLACE] [setting_sign]
+#     )
 #     - Get a variable and a value from a setting in string format.
 #       i.e.  VAR=Value
 #       pattern. '#' is used for comment.
@@ -33,8 +35,10 @@
 #         var: A variable that stores the result.
 #         cmd: A command.
 #
-#   SETTING_FILE_GET_VARIABLES_PATTERN(var attr_pattern setting_file [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign])
+#   SETTING_FILE_GET_VARIABLES_PATTERN(var attr_pattern setting_file 
+#     [NOUNQUOTE] [NOREPLACE]
+#     [NOESCAPE_SEMICOLON] [setting_sign]
+#     )
 #     - Get variable values from a setting file if their names matches given
 #       pattern. '#' is used for comment.
 #       * Parameters:
@@ -50,7 +54,8 @@
 #           Default value: "="
 #
 #   SETTING_FILE_GET_ALL_VARIABLES(setting_file [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign])
+#     [NOESCAPE_SEMICOLON] [setting_sign]
+#     )
 #     - Get all variable values from a setting file.
 #       It is equivalent to:
 #       SETTING_FILE_GET_VARIABLES_PATTERN("" "[A-Za-z_][A-Za-z0-9_]*"
@@ -65,8 +70,10 @@
 #         + setting_sign: (Optional) The symbol that separate attribute name and its value.
 #           Default value: "="
 #
-#   SETTING_FILE_GET_VARIABLE(var attr_name setting_file [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign])
+#   SETTING_FILE_GET_VARIABLE(var attr_name setting_file 
+#     [NOUNQUOTE] [NOREPLACE]
+#     [NOESCAPE_SEMICOLON] [setting_sign]
+#     )
 #     - Get a variable value from a setting file.
 #       It is equivalent to:
 #	SETTING_FILE_GET_VARIABLES_PATTERN(${var} "${attr_name}"
@@ -84,7 +91,8 @@
 #           Default value: "="
 #
 #   SETTING_FILE_GET_ALL_VARIABLES(setting_file [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign])
+#     [NOESCAPE_SEMICOLON] [setting_sign]
+#     )
 #     - Get all attribute values from a setting file.
 #       '#' is used to comment out setting.
 #       * Parameters:
@@ -96,19 +104,38 @@
 #         + setting_sign: (Optional) The symbol that separate attribute name and its value.
 #           Default value: "="
 #
-#   GET_ENV(var default_value [env])
+#   GET_ENV(var default_value [env] 
+#      [[CACHE type docstring [FORCE]] | PARENT_SCOPE]
+#     )
 #     - Get the value of a environment variable, or use default
 #       if the environment variable does not exist or is empty.
 #       * Parameters:
 #         var: Variable to be set
 #         default_value: Default value of the var
 #         env: (Optional) The name of environment variable. Only need if different from var.
+#         CACHE ... : Arguments for SET
+#         PARENT_SCOPE: Arguments for SET
 #
 #   SET_VAR(var untrimmed_value)
 #     - Trim an set the value to a variable.
 #       * Parameters:
 #         var: Variable to be set
 #         untrimmed_value: Untrimmed values that may have space, \t, \n, \r in the front or back of the string.
+#
+#   VARIABLE_PARSE_ARGN(var validOptions [arguments ])
+#     - Parse the arguments and put the result in var and var_<optName>
+#       * Parameters:
+#         var: Main variable name.
+#         validOptions: List name of valid options.
+#         arguments: (Optional) variable to be parsed.
+#
+#   VARIABLE_TO_ARGN(var prefix validOptions)
+#     - Merge the variable and options to the form of ARGN.
+#       Like the reverse of VARIABLE_PARSE_ARGN
+#       * Parameters:
+#         var: Variable that holds result.
+#         prefix: Main variable name that to be processed.
+#         validOptions: List name of valid options.
 #
 
 IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
@@ -289,16 +316,29 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
     ENDMACRO(SETTING_FILE_GET_ALL_VARIABLES setting_file)
 
     MACRO(GET_ENV var default_value)
-	IF(${ARGC} GREATER 2)
-	    SET(_env "${ARGV2}")
-	ELSE(${ARGC} GREATER 2)
-	    SET(_env "${var}")
-	ENDIF(${ARGC} GREATER 2)
+	SET(_env "${var}")
+	SET(_state "")
+	SET(_setArgList "")
+	FOREACH(_arg ${ARGN})
+	    IF(_state STREQUAL "set_args")
+		LIST(APPEND _setArgList "${_arg}")
+	    ELSE(_state STREQUAL "set_args")
+		IF (_arg STREQUAL "CACHE")
+		    SET(_state "set_args")
+		    LIST(APPEND _setArgList "${_arg}")
+		ELSEIF (_arg STREQUAL "PARENT_SCOPE")
+		    SET(_state "set_args")
+		    LIST(APPEND _setArgList "${_arg}")
+		ELSE(_arg STREQUAL "CACHE")
+		    SET(_env "${_arg}")
+		ENDIF(_arg STREQUAL "CACHE")
+	    ENDIF(_state STREQUAL "set_args")
+	ENDFOREACH(_arg ${ARGN})
 
 	IF ("$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "${default_value}")
+	    SET(${var} "${default_value}" ${_setArgList})
 	ELSE("$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "$ENV{${_env}}")
+	    SET(${var} "$ENV{${_env}}" ${_setArgList})
 	ENDIF("$ENV{${_env}}" STREQUAL "")
 	# MESSAGE("Variable ${var}=${${var}}")
     ENDMACRO(GET_ENV var default_value)
@@ -321,6 +361,48 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	#SET(value "${${var}}")
 	#MESSAGE("***SET_VAR: ${var}=|${value}|")
     ENDMACRO(SET_VAR var untrimmedValue)
+
+    MACRO(VARIABLE_PARSE_ARGN var validOptions)
+	SET(_optName "")	## Last _optName
+	SET(_listName ${var})
+
+	## Unset all, otherwise ghost from previous running exists.
+	UNSET(${var})
+	FOREACH(_o ${${validOptions}})
+	    UNSET(${var}_${_o})
+	ENDFOREACH(_o ${validOptions})
+
+	FOREACH(_arg ${ARGN})
+	    LIST(FIND ${validOptions} "${_arg}" _optIndex)
+	    IF(_optIndex EQUAL -1)
+		## Not an option name. Append to existing options
+		LIST(APPEND ${_listName} "${_arg}")
+	    ELSE(_optIndex EQUAL -1)
+		## _arg is an option name.
+		SET(_listName "${var}_${_arg}")
+
+		## If the option already exists
+		IF(DEFINED ${var}_${_arg})
+		    ### then append to it with option name
+		    ### this is especiall useful for ADD_CUSTOM_TARGET_COMMAND
+		    LIST(APPEND ${_listName} "${_arg}")
+		ELSE(DEFINED ${var}_${_arg})
+		    ### otherwise init the option name,
+		    ### , so it can be find by IF(DEFINED ...)
+		    SET(${_listName} "")
+		ENDIF(DEFINED ${var}_${_arg})
+	    ENDIF(_optIndex EQUAL -1)
+	ENDFOREACH(_arg ${ARGN})
+    ENDMACRO(VARIABLE_PARSE_ARGN var validOptions)
+
+    MACRO(VARIABLE_TO_ARGN var prefix validOptions)
+	SET(${var} "${${prefix}}")
+	FOREACH(_o ${${validOptions}})
+	    IF(DEFINED ${prefix}_${_o})
+		LIST(APPEND ${var} "${_o}" "${${prefix}_${_o}}")
+	    ENDIF(DEFINED ${prefix}_${_o})
+	ENDFOREACH(_o ${${validOptions}})
+    ENDMACRO(VARIABLE_TO_ARGN var prefix validOptions)
 
 ENDIF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 
