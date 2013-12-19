@@ -1,3 +1,10 @@
+ibus-chewing (1.4.3-5) unstable; urgency=low
+
+  * Team upload.
+  * Updated patch for CVE-2013-4509 from ChangZhuo Chen.
+
+ -- Aron Xu <aron@debian.org>  Sun, 15 Dec 2013 18:09:28 +0800
+
 ibus-chewing (1.4.3-4) unstable; urgency=high
 
   * CVE-2013-4509 (Closes: #730781)
