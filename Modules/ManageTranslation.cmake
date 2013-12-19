@@ -11,11 +11,20 @@
 #
 # Defines following variables:
 #   + XGETTEXT_OPTIONS_C: Usual xgettext options for C programs.
+# Defines or read from following variables:
+#   + MANAGE_TRANSLATION_MSGFMT_OPTIONS: msgfmt options
+#     Default: --check --check-compatibility --strict
+#   + MANAGE_TRANSLATION_MSGMERGE_OPTIONS: msgmerge options
+#     Default: --update --indent --backup=none
+#   + MANAGE_TRANSLATION_XGETEXT_OPTIONS: xgettext options
+#     Default: ${XGETTEXT_OPTIONS_C}
 #
 # Defines following macros:
 #   MANAGE_GETTEXT [ALL] SRCS src1 [src2 [...]]
 #	[LOCALES locale1 [locale2 [...]]]
 #	[POTFILE potfile]
+#       [MSGFMT_OPTIONS msgfmtOpt]]
+#       [MSGMERGE_OPTIONS msgmergeOpt]]
 #	[XGETTEXT_OPTIONS xgettextOpt]]
 #	)
 #   - Provide Gettext support like pot file generation and
@@ -30,11 +39,15 @@
 #       Currently, only the format: lang_Region (such as fr_FR) is supported.
 #     + POTFILE potFile: (optional) pot file to be referred.
 #       Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot
-#     + XGETTEXT_OPTIONS xgettextOpt: (optional) xgettext_options.
+#     + MSGFMT_OPTIONS msgfmtOpt: (optional) msgfmt options.
+#       Default: ${MANAGE_TRANSLATION_MSGFMT_OPTIONS}
+#     + MSGMERGE_OPTIONS msgmergeOpt: (optional) msgmerge options.
+#       Default: ${MANAGE_TRANSLATION_MSGMERGE_OPTIONS}, which is
+##     + XGETTEXT_OPTIONS xgettextOpt: (optional) xgettext_options.
 #       Default: ${XGETTEXT_OPTIONS_C}
 #     Defines following variables:
-#     + GETTEXT_MSGMERGE_CMD: the full path to the msgmerge tool.
-#     + GETTEXT_MSGFMT_CMD: the full path to the msgfmt tool.
+#     + MSGMERGE_CMD: the full path to the msgmerge tool.
+#     + MSGFMT_CMD: the full path to the msgfmt tool.
 #     + XGETTEXT_CMD: the full path to the xgettext.
 #     Targets:
 #     + pot_file: Generate the pot_file.
@@ -66,148 +79,136 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     SET(_MANAGE_TRANSLATION_CMAKE_ "DEFINED")
     SET(XGETTEXT_OPTIONS_C
 	--language=C --keyword=_ --keyword=N_ --keyword=C_:1c,2 --keyword=NC_:1c,2 -s
-	--package-name=${PROJECT_NAME} --package-version=${PRJ_VER})
-    SET(MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS "--indent" "--update" "--backup=none" CACHE STRING "msgmerge options")
-    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
+	--package-name=${PROJECT_NAME} --package-version=${PRJ_VER}
+	)
+
+    SET(MANAGE_TRANSLATION_MSGFMT_OPTIONS 
+	"--check" CACHE STRING "msgfmt options"
+	)
+    SET(MANAGE_TRANSLATION_MSGMERGE_OPTIONS 
+	"--indent" "--update" "--backup=none" CACHE STRING "msgmerge options"
+	)
+    SET(MANAGE_TRANSLATION_XGETTEXT_OPTIONS 
+	${XGETTEXT_OPTIONS_C}
+	CACHE STRING "xgettext options"
+	)
+    # SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
 
     INCLUDE(ManageMessage)
+    INCLUDE(ManageFile)
+    INCLUDE(ManageDependency)
     IF(NOT TARGET translations)
 	ADD_CUSTOM_TARGET(translations
 	    COMMENT "Making translations"
 	    )
     ENDIF(NOT TARGET translations)
 
+
     #========================================
     # GETTEXT support
 
     MACRO(MANAGE_GETTEXT_INIT)
-	FIND_PROGRAM(XGETTEXT_CMD xgettext)
-	IF(XGETTEXT_CMD STREQUAL "XGETTEXT_CMD-NOTFOUND")
-	    SET(_gettext_dependency_missing 1)
-	    M_MSG(${M_OFF} "xgettext not found! gettext support disabled.")
-	ENDIF(XGETTEXT_CMD STREQUAL "XGETTEXT_CMD-NOTFOUND")
-
-	FIND_PROGRAM(GETTEXT_MSGMERGE_CMD msgmerge)
-	IF(GETTEXT_MSGMERGE_CMD STREQUAL "GETTEXT_MSGMERGE_CMD-NOTFOUND")
-	    SET(_gettext_dependency_missing 1)
-	    M_MSG(${M_OFF} "msgmerge not found! gettext support disabled.")
-	ENDIF(GETTEXT_MSGMERGE_CMD STREQUAL "GETTEXT_MSGMERGE_CMD-NOTFOUND")
-
-	FIND_PROGRAM(GETTEXT_MSGFMT_CMD msgfmt)
-	IF(GETTEXT_MSGFMT_CMD STREQUAL "GETTEXT_MSGFMT_CMD-NOTFOUND")
-	    SET(_gettext_dependency_missing 1)
-	    M_MSG(${M_OFF} "msgfmt not found! gettext support disabled.")
-	ENDIF(GETTEXT_MSGFMT_CMD STREQUAL "GETTEXT_MSGFMT_CMD-NOTFOUND")
-
+	FOREACH(_name "xgettext" "msgmerge" "msgfmt")
+	    STRING(TOUPPER "${_name}" _cmd)
+	    FIND_PROGRAM_ERROR_HANDLING(${_cmd}_CMD
+		ERROR_MSG " gettext support is disabled."
+		ERROR_VAR _gettext_dependency_missing
+		VERBOSE_LEVEL ${M_OFF}
+		"${_name}"
+		)
+	ENDFOREACH(_name "xgettext" "msgmerge" "msgfmt")
     ENDMACRO(MANAGE_GETTEXT_INIT)
 
     FUNCTION(MANAGE_GETTEXT)
 	SET(_gettext_dependency_missing 0)
+	MANAGE_DEPENDENCY(BUILD_REQUIRES GETTEXT REQUIRED DEVEL)
 	MANAGE_GETTEXT_INIT()
 	IF(NOT _gettext_dependency_missing)
-	    SET(_stage "")
-	    SET(_all "")
-	    SET(_srcList "")
-	    SET(_srcList_abs "")
-	    SET(_localeList "")
-	    SET(_potFile "")
-	    SET(_xgettext_option_list "")
-	    FOREACH(_arg ${ARGN})
-		IF(_arg STREQUAL "ALL")
-		    SET(_all "ALL")
-		ELSEIF(_arg STREQUAL "SRCS")
-		    SET(_stage "SRCS")
-		ELSEIF(_arg STREQUAL "LOCALES")
-		    SET(_stage "LOCALES")
-		ELSEIF(_arg STREQUAL "XGETTEXT_OPTIONS")
-		    SET(_stage "XGETTEXT_OPTIONS")
-		ELSEIF(_arg STREQUAL "POTFILE")
-		    SET(_stage "POTFILE")
-		ELSE(_arg STREQUAL "ALL")
-		    IF(_stage STREQUAL "SRCS")
-			FILE(RELATIVE_PATH _relFile ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${_arg})
-			LIST(APPEND _srcList ${_relFile})
-			GET_FILENAME_COMPONENT(_absPoFile ${_arg} ABSOLUTE)
-			LIST(APPEND _srcList_abs ${_absPoFile})
-		    ELSEIF(_stage STREQUAL "LOCALES")
-			LIST(APPEND _localeList ${_arg})
-		    ELSEIF(_stage STREQUAL "XGETTEXT_OPTIONS")
-			LIST(APPEND _xgettext_option_list ${_arg})
-		    ELSEIF(_stage STREQUAL "POTFILE")
-			SET(_potFile "${_arg}")
-		    ELSE(_stage STREQUAL "SRCS")
-			M_MSG(${M_WARN} "MANAGE_GETTEXT: not recognizing arg ${_arg}")
-		    ENDIF(_stage STREQUAL "SRCS")
-		ENDIF(_arg STREQUAL "ALL")
-	    ENDFOREACH(_arg ${ARGN})
+	    SET(_validOptions 
+		"ALL" "SRCS" "LOCALES" "POTFILE"
+		"MSGFMT_OPTIONS"
+		"MSGMERGE_OPTIONS" "XGETTEXT_OPTIONS"
+		)
+	    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+	    IF(DEFINED _opt_ALL)
+		SET(_all "ALL")
+	    ENDIF(DEFINED _opt_ALL)
 
 	    # Default values
-	    IF(_xgettext_option_list STREQUAL "")
-		SET(_xgettext_option_list ${XGETTEXT_OPTIONS_C})
-	    ENDIF(_xgettext_option_list STREQUAL "")
+	    IF(_opt_POTFILE)
+		GET_FILENAME_COMPONENT(_opt_POTFILE "${_opt_POTFILE}" ABSOLUTE)
+		SET(_opt_POTFILE 
+		    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
+	    ELSE(_opt_POTFILE)
+		SET(_opt_POTFILE 
+		    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
+	    ENDIF(_opt_POTFILE)
+	    GET_FILENAME_COMPONENT(_opt_POTFILE_NAME "${_opt_POTFILE}" NAME_WE)
 
-	    IF(_potFile STREQUAL "")
-		SET(_potFile "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
-	    ENDIF(_potFile STREQUAL "")
-
-	    IF(NOT _localeList)
+	    IF(NOT _opt_LOCALES)
 		FILE(GLOB _poFiles "*.po")
 		FOREACH(_poFile ${_poFiles})
 		    GET_FILENAME_COMPONENT(_locale "${_poFile}" NAME_WE)
-		    LIST(APPEND _localeList "${_locale}")
+		    LIST(APPEND _opt_LOCALES "${_locale}")
 		ENDFOREACH(_poFile ${_poFiles})
-	    ENDIF(NOT _localeList)
+	    ENDIF(NOT _opt_LOCALES)
 
-	    M_MSG(${M_INFO2} "XGETTEXT=${XGETTEXT_CMD} ${_xgettext_option_list} -o ${_potFile} ${_srcList}")
-	    ADD_CUSTOM_COMMAND(OUTPUT ${_potFile}
-		COMMAND ${XGETTEXT_CMD} ${_xgettext_option_list} -o ${_potFile} ${_srcList}
+	    FOREACH(_optName "MSGFMT" "MSGMERGE" "XGETTEXT")
+		IF(NOT _opt_${_optName}_OPTIONS)
+		    SET(_opt_${_optName}_OPTIONS 
+			"${MANAGE_TRANSLATION_${_optName}_OPTIONS}"
+			)
+		ENDIF(NOT _opt_${_optName}_OPTIONS)
+	    ENDFOREACH(_optName "MSGFMT" "MSGMERGE" "XGETTEXT")
+
+	    SET(_srcList "")
+	    SET(_srcList_abs "")
+	    FOREACH(_sF ${_opt_SRCS})
+		FILE(RELATIVE_PATH _relFile 
+		    "${CMAKE_CURRENT_BINARY_DIR}" "${_sF}")
+		LIST(APPEND _srcList ${_relFile})
+		GET_FILENAME_COMPONENT(_absPoFile ${_sF} ABSOLUTE)
+		LIST(APPEND _srcList_abs ${_absPoFile})
+	    ENDFOREACH(_sF ${_opt_SRCS})
+
+	    M_MSG(${M_INFO2} "XGETTEXT=${XGETTEXT_CMD} ${_opt_XGETTEXT_OPTIONS} -o ${_opt_POTFILE} ${_srcList}")
+	    ADD_CUSTOM_TARGET_COMMAND(pot_file 
+		OUTPUT ${_opt_POTFILE} ${_all}
+		COMMAND ${XGETTEXT_CMD} ${_opt_XGETTEXT_OPTIONS} 
+		  -o ${_opt_POTFILE} ${_srcList}
 		DEPENDS ${_srcList_abs}
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Extract translatable messages to ${_potFile}"
 		)
 
-	    ADD_CUSTOM_TARGET(pot_file ${_all}
-		DEPENDS ${_potFile}
-		)
-
 	    ### Generating gmo files
-	    SET(_gmoFileList "")
-	    SET(_absGmoFileList "")
-	    SET(_absPoFileList "")
-	    GET_FILENAME_COMPONENT(_potBasename ${_potFile} NAME_WE)
-	    GET_FILENAME_COMPONENT(_potDir ${_potFile} PATH)
-	    GET_FILENAME_COMPONENT(_absPotFile ${_potFile} ABSOLUTE)
-	    GET_FILENAME_COMPONENT(_absPotDir ${_absPotFile} PATH)
-	    FOREACH(_locale ${_localeList})
-		SET(_absGmoFile ${_absPotDir}/${_locale}.gmo)
-		SET(_absPoFile ${_absPotDir}/${_locale}.po)
+	    SET(_gmoList "")
+	    SET(_poList "")
+	    FOREACH(_locale ${_opt_LOCALES})
+		SET(_gmoFile ${CMAKE_CURRENT_BINARY_DIR}/${_locale}.gmo)
+		SET(_poFile ${CMAKE_CURRENT_SOURCE_DIR}/${_locale}.po)
 
-		ADD_CUSTOM_COMMAND(OUTPUT ${_absPoFile}
-		    COMMAND ${GETTEXT_MSGMERGE_CMD}
-		    ${MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS} ${_absPoFile} ${_potFile}
-		    DEPENDS ${_potFile}
-		    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		    COMMENT "${GETTEXT_MSGMERGE_CMD} ${MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS} ${_absPoFile} ${_potFile}"
+		ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
+		    COMMAND ${MSGMERGE_CMD} 
+		    ${_opt_MSGMERGE_OPTIONS} ${_poFile} ${_opt_POTFILE}
+		    COMMAND ${MSGFMT_CMD} 
+		    ${_opt_MSGFMT_OPTIONS} -o ${_gmoFile} ${_poFile}
+		    DEPENDS ${_opt_POTFILE} ${_poFile}
+		    COMMENT "Running ${MSGMERGE_CMD} and ${MSGFMT_CMD}"
 		    )
-
-		ADD_CUSTOM_COMMAND(OUTPUT ${_absGmoFile}
-		    COMMAND ${GETTEXT_MSGFMT_CMD} -o ${_absGmoFile} ${_absPoFile}
-		    DEPENDS ${_absPoFile}
-		    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		    COMMENT "${GETTEXT_MSGFMT_CMD} -o ${_absGmoFile} ${_absPoFile}"
+		LIST(APPEND _gmoList "${_gmoFile}")
+		## No need to use MANAGE_FILE_INSTALL
+		## As this will handle by rpmbuild
+		INSTALL(FILES ${_gmoFile} DESTINATION 
+		    ${DATA_DIR}/locale/${_locale}/LC_MESSAGES 
+		    RENAME ${_opt_POTFILE_NAME}.mo
 		    )
+	    ENDFOREACH(_locale ${_opt_LOCALES})
+	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_potFile}" )
 
-		#MESSAGE("_absPoFile=${_absPoFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
-		INSTALL(FILES ${_absGmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
-		LIST(APPEND _absGmoFileList ${_absGmoFile})
-		LIST(APPEND _absPoFileList ${_absPoFile})
-	    ENDFOREACH(_locale ${_localeList})
-	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_absGmoFileList};${_potFile}" )
-
-	    SET(MANAGE_TRANSLATION_GETTEXT_PO_FILES ${_absPoFileList} CACHE STRING "PO files")
+	    #	    SET(MANAGE_TRANSLATION_GETTEXT_PO_FILES ${_poList} CACHE STRING "PO files")
 
 	    ADD_CUSTOM_TARGET(gmo_files ${_all}
-		DEPENDS ${_absGmoFileList}
+		DEPENDS ${_gmoList}
 		COMMENT "Generate gmo files for translation"
 		)
 

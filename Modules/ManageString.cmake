@@ -4,49 +4,70 @@
 #   ManageVarible
 #
 # Defines the following macros:
+#   STRING_APPEND(var str [separator])
+#     - Append a string to a variable
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string to be appended to end of line.
+#         + separator: Separator to separate between strings.
+#
 #   STRING_TRIM(var str [NOUNQUOTE])
-#   - Trim a string by removing the leading and trailing spaces,
-#     just like STRING(STRIP ...) in CMake 2.6 and later.
-#     This macro is needed as CMake 2.4 does not support STRING(STRIP ..)
-#     This macro also remove quote and double quote marks around the string,
-#     unless NOUNQUOTE is defined.
-#     * Parameters:
-#       + var: A variable that stores the result.
-#       + str: A string.
-#       + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
+#     - Trim a string by removing the leading and trailing spaces,
+#       just like STRING(STRIP ...) in CMake 2.6 and later.
+#       This macro is needed as CMake 2.4 does not support STRING(STRIP ..)
+#       This macro also remove quote and double quote marks around the string,
+#       unless NOUNQUOTE is defined.
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#         + NOUNQUOTE: (Optional) do not remove the double quote mark
+#           around the string.
 #
 #   STRING_ESCAPE_SEMICOLON(var str)
-#   - Escape the semicolon
-#     * Parameters:
-#       + var: A variable that stores the result.
-#       + str: A string.
+#     - Escape the semicolon
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
 #
 #   STRING_UNQUOTE(var str)
-#   - Remove double quote marks and quote marks around a string.
-#     If the string is not quoted, then content of str is copied to var
-#     * Parameters:
-#       + var: A variable that stores the result.
-#       + str: A string.
+#     - Remove double quote marks and quote marks around a string.
+#       If the string is not quoted, then content of str is copied to var
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
 #
 #   STRING_JOIN(var delimiter str_list [str...])
-#   - Concatenate strings, with delimiter inserted between strings.
-#     * Parameters:
-#       + var: A variable that stores the result.
-#       + str_list: A list of string.
-#       + str: (Optional) more string to be join.
+#     - Concatenate strings, with delimiter inserted between strings.
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str_list: A list of string.
+#         + str: (Optional) more string to be join.
 #
 #   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON])
-#   - Split a string into a list using a delimiter, which can be in 1 or more
-#     characters long.
-#     * Parameters:
-#       + var: A variable that stores the result.
-#       + delimiter: To separate a string.
-#       + str: A string.
-#       + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
+#     - Split a string into a list using a delimiter, 
+#       which can be in 1 or more characters long.
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + delimiter: To separate a string.
+#         + str: A string.
+#         + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
 #
 
 IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     SET(_MANAGE_STRING_CMAKE_ "DEFINED")
+
+    FUNCTION(STRING_APPEND var str)
+	IF(NOT "${ARGV2}" STREQUAL "")
+	    SET(_sep "${ARGV2}")
+	ELSE(NOT "${ARGV2}" STREQUAL "")
+	    SET(_sep " ")
+	ENDIF(NOT "${ARGV2}" STREQUAL "")
+	IF(${var} STREQUAL "")
+	    SET(${var} "${str}" PARENT_SCOPE)
+	ELSE(${var} STREQUAL "")
+	    SET(${var} "${${var}}${_sep}${str}" PARENT_SCOPE)
+	ENDIF(${var} STREQUAL "")
+    ENDFUNCTION(STRING_APPEND var str)
 
     # Return (index of lefttmost non match character)
     # Return _strLen if all characters matches regex
@@ -218,16 +239,8 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	SET(${var} "${_ret}")
     ENDMACRO(STRING_UNQUOTE var str)
 
-    MACRO(STRING_JOIN var delimiter str_list)
+    MACRO(STRING_JOIN var delimiter)
 	SET(_ret "")
-	FOREACH(_str ${str_list})
-	    IF(_ret STREQUAL "")
-		SET(_ret "${_str}")
-	    ELSE(_ret STREQUAL "")
-		SET(_ret "${_ret}${delimiter}${_str}")
-	    ENDIF(_ret STREQUAL "")
-	ENDFOREACH(_str ${str_list})
-
 	FOREACH(_str ${ARGN})
 	    IF(_ret STREQUAL "")
 		SET(_ret "${_str}")
@@ -236,7 +249,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    ENDIF(_ret STREQUAL "")
 	ENDFOREACH(_str ${ARGN})
 	SET(${var} "${_ret}")
-    ENDMACRO(STRING_JOIN var delimiter str_list)
+    ENDMACRO(STRING_JOIN var delimiter)
 
     FUNCTION(STRING_FIND var str search_str)
 	STRING(LENGTH "${str}" _str_len)

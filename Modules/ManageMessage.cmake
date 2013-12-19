@@ -28,7 +28,6 @@
 #     + msg: Message to show.
 #
 
-
 IF(NOT DEFINED _MANAGE_MESSAGE_CMAKE_)
     SET(_MANAGE_MESSAGE_CMAKE_ "DEFINED")
     SET(M_FATAL 1)
