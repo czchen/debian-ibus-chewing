@@ -7,7 +7,7 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 override_dh_auto_clean:
 	dh_auto_clean
-	rm -rf CMakeFiles NO_PACK Testing bin po/CMakeFiles
+	rm -rf CMakeFiles NO_PACK Testing bin po/CMakeFiles po/zanata.xml
 	cp debian/po-bak/* po/
 
 override_dh_auto_configure:

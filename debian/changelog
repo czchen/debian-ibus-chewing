@@ -1,3 +1,13 @@
+ibus-chewing (1.4.4-1) unstable; urgency=low
+
+  * new upstream release.
+  * Update Vcs-Browser
+  * Update debian/po-bak
+  * Removed upstream-fixed CVE-2013-4509.patch
+  * Removed 0003_fix_quote_me_replace_linux.patch
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@gmail.com>  Fri, 20 Dec 2013 20:14:22 +0800
+
 ibus-chewing (1.4.3-5) unstable; urgency=low
 
   * Team upload.
