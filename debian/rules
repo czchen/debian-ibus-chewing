@@ -8,7 +8,12 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf CMakeFiles NO_PACK Testing bin po/CMakeFiles po/zanata.xml
-	cp debian/po-bak/* po/
+	-cp debian/po-bak/*.po po/
+
+override_dh_auto_build:
+	mkdir -p debian/po-bak/
+	cp po/*.po debian/po-bak/
+	dh_auto_build
 
 override_dh_auto_configure:
 	cmake -DCMAKE_INSTALL_PREFIX="/usr" \
@@ -21,3 +26,5 @@ override_dh_auto_install:
 	dh_auto_install
 	rm -rf debian/ibus-chewing/usr/share/doc/ibus-chewing-*
 
+override_dh_strip:
+	dh_strip --dbg-package=ibus-chewing-dbg

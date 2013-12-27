@@ -1,0 +1,5 @@
+/etc/gconf/schemas/* /usr/share/gconf/schemas/
+usr/lib/ibus/*
+usr/share/ibus-chewing/*
+usr/share/ibus/component/*
+usr/share/locale/*

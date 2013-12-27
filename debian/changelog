@@ -1,3 +1,11 @@
+ibus-chewing (1.4.4-2) unstable; urgency=low
+
+  * Update backup/restore machanism for po
+  * Add cflags.patch to fix dpkg-buildflags-missing
+  * Add debug package ibus-chewing-dbg
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@gmail.com>  Fri, 27 Dec 2013 21:48:29 +0800
+
 ibus-chewing (1.4.4-1) unstable; urgency=low
 
   * new upstream release.
