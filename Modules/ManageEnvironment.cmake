@@ -70,7 +70,6 @@
 IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     SET(_MANAGE_ENVIRONMENT_CMAKE_ "DEFINED")
     SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
-    CMAKE_POLICY(VERSION 2.6.2)
 
     MACRO(SET_COMPILE_ENV var default_value)
 	SET(_stage "")
@@ -133,21 +132,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	    ENDIF(_cmake_policy_value STREQUAL "")
 	ENDIF(POLICY ${policyName})
     ENDMACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
-
-    ####################################################################
-    # Recommended policy setting
-    #
-    # CMP0005: Preprocessor definition values are now escaped automatically.
-    # OLD:Preprocessor definition values are not escaped.
-    MANAGE_CMAKE_POLICY(CMP0005 NEW)
-
-    # CMP0009: FILE GLOB_RECURSE calls should not follow symlinks by default.
-    # OLD: FILE GLOB_RECURSE calls follow symlinks
-    MANAGE_CMAKE_POLICY(CMP0009 NEW)
-
-    # CMP0017: Prefer files from the CMake module directory when including from there.
-    # OLD: Prefer files from CMAKE_MODULE_PATH regardless
-    MANAGE_CMAKE_POLICY(CMP0017 NEW)
 
     # Include should be put after the cmake policy
     INCLUDE(ManageMessage)

@@ -13,50 +13,62 @@
 #
 # Defines following target:
 #     pack_remove_old: Remove old source package files.
+#
+# Defines following function:
+#   SOURCE_ARCHIVE_CONTENTS_ADD(filename)
+#   - Add a file to source archive if the file is not in the archive.
+#     * Parameters:
+#       - filename: Filename to be added.
+#
+#   SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK(filename)
+#   - Add a file to source archive without check.
+#     * Parameters:
+#       - filename: Filename to be added.
+#
 # Defines following macro:
 #   PACK_SOURCE_CPACK(var [GENERATOR cpackGenerator] 
 #     [GITIGNORE gitignoreFile] [INCLUDE fileList]
 #   )
 #   - Pack with CPack. Thus cpack related targets
 #     such as 'package_source' will be added.
-#     Arguments:
-#     + var: Variable that hold cpack filename (without directory).
-#     + GENERATOR cpackGenerator: Specify CPack Generator to be used.
-#       Default: TGZ
-#     + GITIGNORE gitignoreFile: Use gitignore 
-#       file as bases of ignore_file list
-#     + INCLUDE fileList: List of files that to be packed disregarding
-#       the ignore file. This is useful for packing the generated file
-#       such as .pot or Changelog.
-#     Read and Write to following variable:
-#     Define following variables:
-#     + PROJECT_NAME: Project name
-#     + PRJ_VER: Project version
-#     + PRJ_SUMMARY: (Optional) Project summary
-#     + VENDOR: Organization that issue this project.
-#     + SOURCE_ARCHIVE_CONTENTS: List of files to be packed to archive.
-#     + SOURCE_ARCHIVE_FILE_EXTENSION: File extension of 
-#       the source package
-#     + SOURCE_ARCHIVE_IGNORE_FILES: List of files to be 
-#       ignored to archive.
-#     + SOURCE_ARCHIVE_NAME: Name of source archive (without path)
+#     * Parameters:
+#       + var: Variable that hold cpack filename (without directory).
+#       + GENERATOR cpackGenerator: Specify CPack Generator to be used.
+#         Default: TGZ
+#       + GITIGNORE gitignoreFile: Use gitignore 
+#         file as bases of ignore_file list
+#       + INCLUDE fileList: List of files that to be packed disregarding
+#         the ignore file. This is useful for packing the generated file
+#         such as .pot or Changelog.
+#     * Define following variables:
+#       + PROJECT_NAME: Project name
+#       + PRJ_VER: Project version
+#       + PRJ_SUMMARY: (Optional) Project summary
+#       + VENDOR: Organization that issue this project.
+#       + SOURCE_ARCHIVE_CONTENTS: List of files to be packed to archive.
+#       + SOURCE_ARCHIVE_FILE_EXTENSION: File extension of 
+#         the source package
+#       + SOURCE_ARCHIVE_IGNORE_FILES: List of files to be 
+#         ignored to archive.
+#       + SOURCE_ARCHIVE_NAME: Name of source archive (without path)
 #
 #   PACK_SOURCE_ARCHIVE([outputDir | OUTPUT_FILE file] 
 #     [GENERATOR cpackGenerator] 
 #     [GITIGNORE gitignoreFile] [INCLUDE fileList])[generator]
 #   )
 #   - Pack source archive, this provide an convenient wrapper
-#     of PACK_SOURCE_ARCHIVEfiles as <projectName>-<PRJ_VER>-Source.<packFormat>,
-#     Arguments:
-#     + outputDir: Directory to write source archive.
-#     + OUTPUT_FILE file: Output file with path.
-#     See PACK_SOURCE_CPACK for other parameters.
-#     Read following variables:
-#     + SOURCE_ARCHIVE_FILE: Path to source archive file
-#     Target:
-#     + pack_src: Pack source files like package_source.
-#     + clean_pack_src: Remove all source archives.
-#     + clean_old_pack_src: Remove all old source package.
+#      of PACK_SOURCE_CPACK.
+#     Default output name: <projectName>-<PRJ_VER>-Source.<packFormat>
+#     * Parameters:
+#       + outputDir: Directory to write source archive.
+#       + OUTPUT_FILE file: Output file with path.
+#       See PACK_SOURCE_CPACK for other parameters.
+#     * Read following variables:
+#       + SOURCE_ARCHIVE_FILE: Path to source archive file
+#     * Target:
+#       + pack_src: Pack source files like package_source.
+#       + clean_pack_src: Remove all source archives.
+#       + clean_old_pack_src: Remove all old source package.
 #
 #
 IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
@@ -80,6 +92,27 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
     INCLUDE(ManageVersion)
     INCLUDE(ManageFile)
 
+    FUNCTION(SOURCE_ARCHIVE_CONTENTS_ADD filename)
+	GET_FILENAME_COMPONENT(_file "${filename}" ABSOLUTE)
+	FILE(RELATIVE_PATH _f ${CMAKE_SOURCE_DIR} "${_file}")
+	LIST(FIND SOURCE_ARCHIVE_CONTENTS "${_f}" _index)
+	IF(_index LESS 0)
+	    LIST(APPEND SOURCE_ARCHIVE_CONTENTS "${_f}")
+	    SET(SOURCE_ARCHIVE_CONTENTS "${SOURCE_ARCHIVE_CONTENTS}"
+		CACHE INTERNAL "Source archive file list"
+		)
+	ENDIF(_index LESS 0)
+    ENDFUNCTION(SOURCE_ARCHIVE_CONTENTS_ADD filename)
+
+    FUNCTION(SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK filename)
+	GET_FILENAME_COMPONENT(_file "${filename}" ABSOLUTE)
+	FILE(RELATIVE_PATH _f ${CMAKE_SOURCE_DIR} "${_file}")
+	LIST(APPEND SOURCE_ARCHIVE_CONTENTS "${_f}")
+	SET(SOURCE_ARCHIVE_CONTENTS "${SOURCE_ARCHIVE_CONTENTS}"
+	    CACHE INTERNAL "Source archive file list"
+	    )
+    ENDFUNCTION(SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK filename)
+
     # Internal:  SOURCE_ARCHIVE_GET_CONTENTS()
     #   - Return all source file to be packed.
     #     This is called by SOURCE_ARCHIVE(),
@@ -88,6 +121,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	SET(_fileList "")
 	FILE(GLOB_RECURSE _ls FOLLOW_SYMLINKS "*" )
 	STRING(REPLACE "\\\\" "\\" _ignore_files "${SOURCE_ARCHIVE_IGNORE_FILES}")
+	#SET(_ignore_files "${SOURCE_ARCHIVE_IGNORE_FILES}")
 	FOREACH(_file ${_ls})
 	    SET(_matched 0)
 	    FOREACH(filePattern ${_ignore_files})
@@ -99,11 +133,12 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 		ENDIF(_file MATCHES "${filePattern}")
 	    ENDFOREACH(filePattern ${_ignore_files})
 	    IF(NOT _matched)
-		FILE(RELATIVE_PATH _f ${CMAKE_SOURCE_DIR} "${_file}")
-		LIST(APPEND _fileList "${_f}")
+		SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK("${_file}")
 	    ENDIF(NOT _matched)
 	ENDFOREACH(_file ${_ls})
-	SET(SOURCE_ARCHIVE_CONTENTS ${_fileList} CACHE INTERNAL "Source archive file list")
+	SET(SOURCE_ARCHIVE_CONTENTS "${SOURCE_ARCHIVE_CONTENTS}" 
+	    CACHE INTERNAL "Source archive file list"
+	    )
 	M_MSG(${M_INFO2} "SOURCE_ARCHIVE_CONTENTS=${SOURCE_ARCHIVE_CONTENTS}")
     ENDFUNCTION(SOURCE_ARCHIVE_GET_CONTENTS)
 

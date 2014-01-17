@@ -79,7 +79,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     SET(_MANAGE_TRANSLATION_CMAKE_ "DEFINED")
     SET(XGETTEXT_OPTIONS_C
 	--language=C --keyword=_ --keyword=N_ --keyword=C_:1c,2 --keyword=NC_:1c,2 -s
-	--package-name=${PROJECT_NAME} --package-version=${PRJ_VER}
+	
 	)
 
     SET(MANAGE_TRANSLATION_MSGFMT_OPTIONS 
@@ -92,8 +92,9 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	${XGETTEXT_OPTIONS_C}
 	CACHE STRING "xgettext options"
 	)
-    # SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
+    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
 
+    INCLUDE(ManageArchive)
     INCLUDE(ManageMessage)
     INCLUDE(ManageFile)
     INCLUDE(ManageDependency)
@@ -137,13 +138,12 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    # Default values
 	    IF(_opt_POTFILE)
 		GET_FILENAME_COMPONENT(_opt_POTFILE "${_opt_POTFILE}" ABSOLUTE)
-		SET(_opt_POTFILE 
-		    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
 	    ELSE(_opt_POTFILE)
 		SET(_opt_POTFILE 
 		    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
 	    ENDIF(_opt_POTFILE)
 	    GET_FILENAME_COMPONENT(_opt_POTFILE_NAME "${_opt_POTFILE}" NAME_WE)
+	    SOURCE_ARCHIVE_CONTENTS_ADD("${_opt_POTFILE}")
 
 	    IF(NOT _opt_LOCALES)
 		FILE(GLOB _poFiles "*.po")
@@ -171,11 +171,13 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		LIST(APPEND _srcList_abs ${_absPoFile})
 	    ENDFOREACH(_sF ${_opt_SRCS})
 
-	    M_MSG(${M_INFO2} "XGETTEXT=${XGETTEXT_CMD} ${_opt_XGETTEXT_OPTIONS} -o ${_opt_POTFILE} ${_srcList}")
-	    ADD_CUSTOM_TARGET_COMMAND(pot_file 
-		OUTPUT ${_opt_POTFILE} ${_all}
+	    ### Generating pot files
+	    ADD_CUSTOM_TARGET_COMMAND(pot_file
+		NO_FORCE OUTPUT ${_opt_POTFILE} ${_all}
 		COMMAND ${XGETTEXT_CMD} ${_opt_XGETTEXT_OPTIONS} 
-		  -o ${_opt_POTFILE} ${_srcList}
+		    -o ${_opt_POTFILE}
+		    --package-name=${PROJECT_NAME} 
+		    --package-version=${PRJ_VER} ${_srcList}
 		DEPENDS ${_srcList_abs}
 		COMMENT "Extract translatable messages to ${_potFile}"
 		)
@@ -186,15 +188,21 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    FOREACH(_locale ${_opt_LOCALES})
 		SET(_gmoFile ${CMAKE_CURRENT_BINARY_DIR}/${_locale}.gmo)
 		SET(_poFile ${CMAKE_CURRENT_SOURCE_DIR}/${_locale}.po)
-
-		ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
+		SOURCE_ARCHIVE_CONTENTS_ADD("${_poFile}")
+		ADD_CUSTOM_COMMAND(OUTPUT ${_poFile}
 		    COMMAND ${MSGMERGE_CMD} 
 		    ${_opt_MSGMERGE_OPTIONS} ${_poFile} ${_opt_POTFILE}
+		    DEPENDS ${_opt_POTFILE}
+		    COMMENT "Running ${MSGMERGE_CMD}"
+		    )
+
+		ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
 		    COMMAND ${MSGFMT_CMD} 
 		    ${_opt_MSGFMT_OPTIONS} -o ${_gmoFile} ${_poFile}
-		    DEPENDS ${_opt_POTFILE} ${_poFile}
-		    COMMENT "Running ${MSGMERGE_CMD} and ${MSGFMT_CMD}"
+		    DEPENDS ${_poFile}
+		    COMMENT "Running ${MSGFMT_CMD}"
 		    )
+
 		LIST(APPEND _gmoList "${_gmoFile}")
 		## No need to use MANAGE_FILE_INSTALL
 		## As this will handle by rpmbuild
@@ -204,8 +212,6 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		    )
 	    ENDFOREACH(_locale ${_opt_LOCALES})
 	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_potFile}" )
-
-	    #	    SET(MANAGE_TRANSLATION_GETTEXT_PO_FILES ${_poList} CACHE STRING "PO files")
 
 	    ADD_CUSTOM_TARGET(gmo_files ${_all}
 		DEPENDS ${_gmoList}
