@@ -1,3 +1,13 @@
+ibus-chewing (1.4.7-1) unstable; urgency=low
+
+  * new upstream release.
+  * Add make translations due to upstream changed.
+  * Update po backup/restore mechanism.
+  * Restore ChangeLog before install because it is modified during build
+    process.
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@gmail.com>  Fri, 17 Jan 2014 20:09:14 +0800
+
 ibus-chewing (1.4.4-1) unstable; urgency=low
 
   * new upstream release.
