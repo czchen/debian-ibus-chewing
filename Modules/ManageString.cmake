@@ -3,13 +3,39 @@
 # Included by:
 #   ManageVarible
 #
-# Defines the following macros:
+# Defines the following functions:
 #   STRING_APPEND(var str [separator])
 #     - Append a string to a variable
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
+#
+#   STRING_PADDING(var str length [padStr])
+#     - Padding the string to specified length
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#         + length: Required length.
+#         + padStr: String that used in padding. Default: " "
+#
+#   STRING_PREPEND(var str [separator])
+#     - Prepend a string to a variable
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string to be appended to end of line.
+#         + separator: Separator to separate between strings.
+#
+#   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
+#     - Split a string into a list using a delimiter, 
+#       which can be in 1 or more characters long.
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + delimiter: To separate a string.
+#         + str: A string.
+#         + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
+#         + ESCAPE_VARIABLE: (Optional) Escape variables.
+#         + ALLOW_EMPTY: (Optional) Allow empty element exist in the array.
 #
 #   STRING_TRIM(var str [NOUNQUOTE])
 #     - Trim a string by removing the leading and trailing spaces,
@@ -23,6 +49,7 @@
 #         + NOUNQUOTE: (Optional) do not remove the double quote mark
 #           around the string.
 #
+# Defines the following macros:
 #   STRING_ESCAPE_SEMICOLON(var str)
 #     - Escape the semicolon
 #       * Parameters:
@@ -43,31 +70,52 @@
 #         + str_list: A list of string.
 #         + str: (Optional) more string to be join.
 #
-#   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON])
-#     - Split a string into a list using a delimiter, 
-#       which can be in 1 or more characters long.
-#       * Parameters:
-#         + var: A variable that stores the result.
-#         + delimiter: To separate a string.
-#         + str: A string.
-#         + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
 #
 
 IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     SET(_MANAGE_STRING_CMAKE_ "DEFINED")
 
     FUNCTION(STRING_APPEND var str)
-	IF(NOT "${ARGV2}" STREQUAL "")
+	IF(${ARGC} GREATER 2)
 	    SET(_sep "${ARGV2}")
-	ELSE(NOT "${ARGV2}" STREQUAL "")
-	    SET(_sep " ")
-	ENDIF(NOT "${ARGV2}" STREQUAL "")
-	IF(${var} STREQUAL "")
+	ELSE(${ARGC} GREATER 2)
+	    SET(_sep "")
+	ENDIF(${ARGC} GREATER 2)
+	IF("${${var}}" STREQUAL "")
 	    SET(${var} "${str}" PARENT_SCOPE)
-	ELSE(${var} STREQUAL "")
+	ELSE("${${var}}" STREQUAL "")
 	    SET(${var} "${${var}}${_sep}${str}" PARENT_SCOPE)
-	ENDIF(${var} STREQUAL "")
+	ENDIF("${${var}}" STREQUAL "")
     ENDFUNCTION(STRING_APPEND var str)
+
+    FUNCTION(STRING_PADDING var str length)
+	SET(_ret "${str}")
+	IF(${ARGN})
+	    SET(_padStr ${ARGN})
+	ELSE(${ARGN})
+	    SET(_padStr " ")
+	ENDIF(${ARGN})
+	STRING(LENGTH "${str}" _strLen)
+	STRING(LENGTH "${_padStr}" _padLen)
+	WHILE( _strLen LESS length)
+	    SET(_ret "${_ret}${_padStr}")
+	    MATH(EXPR _strLen ${_strLen}+${_padLen})
+	ENDWHILE( _strLen LESS length)
+	SET(${var} "${_ret}" PARENT_SCOPE)
+    ENDFUNCTION(STRING_PADDING var str length)
+
+    FUNCTION(STRING_PREPEND var str)
+	IF(${ARGC} GREATER 2)
+	    SET(_sep "${ARGV2}")
+	ELSE(${ARGC} GREATER 2)
+	    SET(_sep "")
+	ENDIF(${ARGC} GREATER 2)
+	IF("${${var}}" STREQUAL "")
+	    SET(${var} "${str}" PARENT_SCOPE)
+	ELSE("${${var}}" STREQUAL "")
+	    SET(${var} "${str}${_sep}${${var}}" PARENT_SCOPE)
+	ENDIF("${${var}}" STREQUAL "")
+    ENDFUNCTION(STRING_PREPEND var str)
 
     # Return (index of lefttmost non match character)
     # Return _strLen if all characters matches regex
@@ -145,40 +193,42 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	STRING(REGEX REPLACE ";" "\\\\;" ${var} "${str}")
     ENDMACRO(STRING_ESCAPE_SEMICOLON var str)
 
-    # Internal macro
+    # Internal function
     # Nested Variable cannot be escaped here, as variable is already substituted
     # at the time it passes to this macro.
-    MACRO(_STRING_ESCAPE var str)
+    FUNCTION(_STRING_ESCAPE var str)
 	# ';' and '\' are tricky, need to be encoded.
 	# '#' => '#H'
 	# '\' => '#B'
 	# ';' => '#S'
+	# '$' => '#D'
 	SET(_NOESCAPE_SEMICOLON "")
-	SET(_NOESCAPE_HASH "")
+	SET(_ESCAPE_VARIABLE "")
 
 	FOREACH(_arg ${ARGN})
 	    IF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 		SET(_NOESCAPE_SEMICOLON "NOESCAPE_SEMICOLON")
-	    ELSEIF(${_arg} STREQUAL "NOESCAPE_HASH")
-		SET(_NOESCAPE_HASH "NOESCAPE_HASH")
+	    ELSEIF(${_arg} STREQUAL "ESCAPE_VARIABLE")
+		SET(_ESCAPE_VARIABLE "ESCAPE_VARIABLE")
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 	ENDFOREACH(_arg ${ARGN})
 
-	IF(_NOESCAPE_HASH STREQUAL "")
-	    STRING(REGEX REPLACE "#" "#H" _ret "${str}")
-	ELSE(_NOESCAPE_HASH STREQUAL "")
-	    SET(_ret "${str}")
-	ENDIF(_NOESCAPE_HASH STREQUAL "")
+	STRING(REGEX REPLACE "#" "#H" _ret "${str}")
 
 	STRING(REGEX REPLACE "\\\\" "#B" _ret "${_ret}")
+
+	IF(NOT _ESCAPE_VARIABLE STREQUAL "")
+	    STRING(REGEX REPLACE "$" "#D" _ret "${_ret}")
+	ENDIF(NOT _ESCAPE_VARIABLE STREQUAL "")
+
 	IF(_NOESCAPE_SEMICOLON STREQUAL "")
 	    STRING(REGEX REPLACE ";" "#S" _ret "${_ret}")
 	ENDIF(_NOESCAPE_SEMICOLON STREQUAL "")
 	#MESSAGE("_STRING_ESCAPE:_ret=${_ret}")
-	SET(${var} "${_ret}")
-    ENDMACRO(_STRING_ESCAPE var str)
+	SET(${var} "${_ret}" PARENT_SCOPE)
+    ENDFUNCTION(_STRING_ESCAPE var str)
 
-    MACRO(_STRING_UNESCAPE var str)
+    FUNCTION(_STRING_UNESCAPE var str)
 	# '#B' => '\'
 	# '#H' => '#'
 	# '#D' => '$'
@@ -210,9 +260,9 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    STRING(REGEX REPLACE "#D" "$" _ret "${_ret}")
 	ENDIF(NOT _ESCAPE_VARIABLE STREQUAL "")
 	STRING(REGEX REPLACE "#H" "#" _ret "${_ret}")
-	SET(${var} "${_ret}")
+	SET(${var} "${_ret}" PARENT_SCOPE)
 	#MESSAGE("*** _STRING_UNESCAPE: ${var}=${${var}}")
-    ENDMACRO(_STRING_UNESCAPE var str)
+    ENDFUNCTION(_STRING_UNESCAPE var str)
 
     MACRO(STRING_UNQUOTE var str)
 	SET(_ret "${str}")
@@ -242,11 +292,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     MACRO(STRING_JOIN var delimiter)
 	SET(_ret "")
 	FOREACH(_str ${ARGN})
-	    IF(_ret STREQUAL "")
-		SET(_ret "${_str}")
-	    ELSE(_ret STREQUAL "")
-		SET(_ret "${_ret}${delimiter}${_str}")
-	    ENDIF(_ret STREQUAL "")
+	    STRING_APPEND(_ret "${_str}" "${delimiter}")
 	ENDFOREACH(_str ${ARGN})
 	SET(${var} "${_ret}")
     ENDMACRO(STRING_JOIN var delimiter)
@@ -261,22 +307,24 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	SET(_result -1)
 	WHILE(_index LESS _str_end)
 	    STRING(SUBSTRING "${str}" ${_index} ${_search_len} _str_window)
-	    IF("${_str_window}" STREQUAL "${search_str}")
+	    IF(_str_window STREQUAL search_str)
 		SET(_result ${_index})
 		BREAK()
-	    ELSE("${_str_window}" STREQUAL "${search_str}")
+	    ELSE(_str_window STREQUAL search_str)
 		MATH(EXPR _index ${_index}+1)
-	    ENDIF("${_str_window}" STREQUAL "${search_str}")
+	    ENDIF(_str_window STREQUAL search_str)
 	ENDWHILE(_index LESS _str_end)
 	SET(${var} ${_result} PARENT_SCOPE)
     ENDFUNCTION(STRING_FIND var str search)
 
-    FUNCTION(STRING_SPLIT_2 var str_remain delimiter str)
+    FUNCTION(STRING_SPLIT_2 var str_remain has_delimiter delimiter str)
 	STRING_FIND(_index "${str}" "${delimiter}")
 	IF(_index EQUAL -1)
+	    SET(${has_delimiter} "0" PARENT_SCOPE)
 	    SET(${var} "${str}" PARENT_SCOPE)
 	    SET(${str_remain} "" PARENT_SCOPE)
 	ELSE(_index EQUAL -1)
+	    SET(${has_delimiter} "1" PARENT_SCOPE)
 	    STRING(SUBSTRING "${str}" 0 ${_index} _var)
 	    SET(${var} "${_var}" PARENT_SCOPE)
 
@@ -287,18 +335,21 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    STRING(SUBSTRING "${str}" ${_str_2_start} ${_str_2_len} _str_remain)
 	    SET(${str_remain} "${_str_remain}" PARENT_SCOPE)
 	ENDIF(_index EQUAL -1)
-    ENDFUNCTION(STRING_SPLIT_2 var str_remain delimiter str)
+    ENDFUNCTION(STRING_SPLIT_2 var str_remain has_delimiter delimiter str)
 
-    MACRO(STRING_SPLIT var delimiter str)
+    FUNCTION(STRING_SPLIT var delimiter str)
 	#MESSAGE("***STRING_SPLIT: var=${var} str=${str}")
 	SET(_max_tokens "")
 	SET(_NOESCAPE_SEMICOLON "")
 	SET(_ESCAPE_VARIABLE "")
+	SET(_ALLOW_EMPTY "")
 	FOREACH(_arg ${ARGN})
 	    IF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 		SET(_NOESCAPE_SEMICOLON "NOESCAPE_SEMICOLON")
 	    ELSEIF(${_arg} STREQUAL "ESCAPE_VARIABLE")
 		SET(_ESCAPE_VARIABLE "ESCAPE_VARIABLE")
+	    ELSEIF(${_arg} STREQUAL "ALLOW_EMPTY")
+		SET(_ALLOW_EMPTY "ALLOW_EMPTY")
 	    ELSE(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 		SET(_max_tokens ${_arg})
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
@@ -314,25 +365,27 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	SET(_token_count 1)
 
 	WHILE(NOT _token_count EQUAL _max_tokens)
-	    STRING_SPLIT_2(_token _str "${_delimiter}" "${_str}")
-	    #MESSAGE("_token_count=${_token_count} _max_tokens=${_max_tokens} _token=${_token} _str=${_str}")
+	    STRING_SPLIT_2(_token _str _has_delimiter "${_delimiter}" "${_str}")
+	    #MESSAGE("_token_count=${_token_count} _max_tokens=${_max_tokens} _token=|${_token}| _str=${_str}")
 	    MATH(EXPR _token_count ${_token_count}+1)
-	    LIST(APPEND _str_list "${_token}")
-	    IF("${_str}" STREQUAL "")
+	    IF(NOT "${_token}" STREQUAL "" OR _ALLOW_EMPTY)
+		LIST(APPEND _str_list "${_token}")
+	    ENDIF(NOT "${_token}" STREQUAL "" OR _ALLOW_EMPTY)
+	    IF(_has_delimiter EQUAL 0)
 		## No more tokens
 		BREAK()
-	    ENDIF("${_str}" STREQUAL "")
+	    ENDIF(_has_delimiter EQUAL 0)
 	ENDWHILE(NOT _token_count EQUAL _max_tokens)
 
-	IF(NOT "x${_str}" STREQUAL "x")
-	    ## Append last part
+	IF(_has_delimiter EQUAL 1)
 	    LIST(APPEND _str_list "${_str}")
-	ENDIF(NOT "x${_str}" STREQUAL "x")
+	ENDIF(_has_delimiter EQUAL 1)
 
 	# Unencoding
-	_STRING_UNESCAPE(${var} "${_str_list}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
+	_STRING_UNESCAPE(_var "${_str_list}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
 	#MESSAGE("***STRING_SPLIT: tokens=${${var}}")
-    ENDMACRO(STRING_SPLIT var delimiter str)
+	SET(${var} "${_var}" PARENT_SCOPE)
+    ENDFUNCTION(STRING_SPLIT var delimiter str)
 
 ENDIF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 

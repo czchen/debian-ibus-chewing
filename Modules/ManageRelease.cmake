@@ -3,7 +3,7 @@
 #
 #  Defines following macros:
 #  MANAGE_RELEASE(releaseTargets)
-#  - Run release targets and the target "after_release_commit".
+#  - Run release targets.
 #    This macro skips the missing targets so distro package maintainers
 #    do not have to get the irrelevant dependencies.
 #    For the "hard" requirement, please use cmake command
@@ -31,7 +31,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	    COMMENT "Releasing ${PROJECT_NAME}-${PRJ_VER}"
 	    )
 
-	## Remove the missing targets
+	## Add dependent targets that actually exists
 	SET(_releaseTargets "")
 	FOREACH(_target ${ARGN})
 	    IF(TARGET ${_target})
@@ -44,13 +44,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	IF(_releaseTargets)
 	    ADD_DEPENDENCIES(release ${_releaseTargets})
 	ENDIF(_releaseTargets)
-
-	## Run after release
-	#ADD_CUSTOM_COMMAND(TARGET release
-	#    POST_BUILD
-	#    COMMAND make after_release_commit
-	#    COMMENT "After released ${PROJECT_NAME}-${PRJ_VER}"
-	#    )
 
     ENDMACRO(MANAGE_RELEASE)
 ENDIF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)

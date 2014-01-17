@@ -1,10 +1,8 @@
-PRJ_VER=1.4.4
-SUMMARY=Fixed RHBZ 842856, 1027030; Added translations:fr_FR, ja_JP, ko_KR
-REDHAT_BUGZILLA=842856, 1027030
+PRJ_VER=1.4.7
+SUMMARY=Fixed Build for RHEL7
+REDHAT_BUGZILLA=1027031,1028911,1045868
 [Changes]
-- Resolves Bug 842856 - ibus-chewing 1.4.3-1 not built with $RPM_OPT_FLAGS
-- Resolves Bug 1027030 - CVE-2013-4509 ibus-chewing: ibus: visible 
-  password entry flaw [fedora-all]
-  Thanks czchen for the GitHub pull request 39.
-- Added translations: fr_FR, ja_JP, ko_KR
-- Adopt cmake-fedora-1.2.0
+- Target "translation" is built separately with all, 
+  in order to tame multiple job make.
+
+

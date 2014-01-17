@@ -1,3 +1,38 @@
+* Thu Jan 16 2014 Ding-Yi Chen <dchen at redhat.com> - 1.4.6-5
+- Target "translation" is built separately with all, in order to tame multiple job make.
+
+* Thu Jan 16 2014 Ding-Yi Chen <dchen at redhat.com> - 1.4.6-1
+- Fix Build for RHEL7
+
+* Wed Jan 15 2014 Ding-Yi Chen <dchen at redhat.com> - 1.4.5-1
+- Resolves Bug 1013977 - ibus-chewing needs to have ibus write-cache --system in %post and %postun
+- Resolves Bug 1027031 - CVE-2013-4509 ibus-chewing: ibus: visible password entry flaw [rhel-7.0]
+- Resolves Bug 1028911 - [zh_TW]'Chinese<->English' switch does not work when clicking on the Chewing menu list.
+- Resolves Bug 1045868 - ibus-chewing *again* not built with $RPM_OPT_FLAGS
+- Option "Sync between caps lock and IM":
+  + Default of  is changed to "disable",  because the previous default
+    "keyboard" cause bug 1028911 for GNOME Shell.
+  + Now Sync from "input method" can control Caps LED in GNOME shell.
+- Translation added: de_DE, es_ES, it_IT, pt_BR, uk_UA
+- Set environment IBUS_CHEWING_LOGFILE for ibus-chewing log.
+
+* Mon Dec 23 2013 Ding-Yi Chen <dchen at redhat.com> - 1.4.4-1
+- Resolves Bug 842856 - ibus-chewing 1.4.3-1 not built with $RPM_OPT_FLAGS
+- Resolves Bug 1027030 - CVE-2013-4509 ibus-chewing: ibus: visible 
+  password entry flaw [fedora-all]
+  Thanks czchen for the GitHub pull request 39.
+- Added translations: fr_FR, ja_JP, ko_KR
+- Adopt cmake-fedora-1.2.0
+
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.3-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Wed Feb 20 2013 Ville Skyttä <ville.skytta@iki.fi> - 1.4.3-3
+- Build with $RPM_OPT_FLAGS (#842856).
+
+* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.4.3-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
 * Mon Nov 26 2012 Ding-Yi Chen <dchen at redhat.com> - 1.4.3-1
 - Fixed GitHub issue #30: Rework decorate_preedit
   by merging pull request #30 from buganini
@@ -234,7 +269,7 @@ behind when toggling ibus off- Use WM's revised ibus-chewing icon.
 - Hide ibus-chewing-panel when ibus-chewing is focus-out
 
 * Mon May 11 2009 Ding-Yi Chen <dchen at redhat.com> - 1.0.9.20090508-1
-  Now commit is forced when switch of ibus-chewing or current application loses focus.
+Now commit is forced when switch of ibus-chewing or current application loses focus.
 - New ibus-chewing.png is contribute by WM.
 - input-keyboard.png is no longer needed and removed.
 - ibus-engine-chewing -v option now need an integer as verbose level.
@@ -310,3 +345,4 @@ Fix the errors which Funda Wang as pointing out:
 
 * Fri Aug 15 2008 Huang Peng <shawn.p.huang@gmail.com> - 0.1.1.20081023-1
 - The first version.
+
