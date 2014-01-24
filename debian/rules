@@ -2,6 +2,8 @@
 export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
+CFLAGS+=$(CPPFLAGS)
+
 %:
 	dh $@
 
@@ -28,5 +30,7 @@ override_dh_auto_configure:
 override_dh_auto_install:
 	cp $(CURDIR)/debian/bak/ChangeLog $(CURDIR)/
 	dh_auto_install
-	rm -rf debian/ibus-chewing/usr/share/doc/ibus-chewing-*
+	rm -rf $(CURDIR)/debian/tmp/usr/share/doc/ibus-chewing-*
 
+override_dh_strip:
+	dh_strip --dbg-package=ibus-chewing-dbg

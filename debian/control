@@ -29,3 +29,19 @@ Description: Chewing engine for IBus
  It also may help developers to develop input method easily.
  .
  IBus-chewing is a IBus based IM Engine for Traditional Chinese
+
+Package: ibus-chewing-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends:
+ ibus-chewing (= ${binary:Version}),
+ ${misc:Depends}
+Description: Chewing engine for IBus - debugging symbols
+ IBus is an Intelligent Input Bus. It is a new input framework for Linux
+ OS. It provides full featured and user friendly input method user interface.
+ It also may help developers to develop input method easily.
+ .
+ IBus-chewing is a IBus based IM Engine for Traditional Chinese
+ .
+ This package contains the debugging symbols for ibus-chewing.
