@@ -1,8 +1,5 @@
-PRJ_VER=1.4.7
-SUMMARY=Fixed Build for RHEL7
-REDHAT_BUGZILLA=1027031,1028911,1045868
+PRJ_VER=1.4.10.1
+SUMMARY=Resolves Bug 1054937
+REDHAT_BUGZILLA=1054937
 [Changes]
-- Target "translation" is built separately with all, 
-  in order to tame multiple job make.
-
-
+- Resolves Bug 1054937 - Broken %defattr in ibus-chewing

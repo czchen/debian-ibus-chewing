@@ -277,6 +277,10 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 		)
 	    LIST(APPEND _dep_list ${_outputDir_real})
 	ENDIF(_own_dir)
+	SET(_make_targets COMMAND make package_source)
+	IF(TARGET test)
+	    LIST(INSERT _make_targets 0 COMMAND make test)
+	ENDIF(TARGET test)
 
 	## If own, need to move to it.
 	IF(_own)
