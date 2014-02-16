@@ -36,6 +36,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	FOREACH(_target ${ARGN})
 	    IF(TARGET ${_target})
 		LIST(APPEND _releaseTargets "${_target}")
+		## Release targets should be build after target tag
+		ADD_DEPENDENCIES(${_target} tag)
 	    ELSE(TARGET ${_target})
 		M_MSG(${M_OFF} "Target ${_target} does not exist, skipped.")
 	    ENDIF(TARGET ${_target})

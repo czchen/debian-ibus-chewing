@@ -126,6 +126,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     SET(_manage_rpm_dependency_missing 0)
     SET(_cmake_fedora_dependency_missing 0)
     SET(RPM_SPEC_TAG_PADDING 16 CACHE STRING "RPM SPEC Tag padding")
+    SET(CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
 
     FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
 	ERROR_MSG " rpm build support is disabled."
@@ -146,7 +147,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	ERROR_VAR _cmake_fedora_dependency_missing
 	VERBOSE_LEVEL ${M_OFF}
 	"cmake-fedora-koji"
-	PATHS ${CMAKE_SOURCE_DIR}/scripts
+	PATHS  ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH}
 	)
 
     IF(NOT _manage_rpm_dependency_missing)
@@ -168,7 +169,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 make install DESTDIR=%{buildroot}"
 	)
 
-        SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root-)")
+        SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root,-)")
 
 	# %{dist}
 	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"

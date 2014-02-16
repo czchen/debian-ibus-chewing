@@ -15,7 +15,7 @@ RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_REQUIRES_OUTPUT
     Requires preun "GConf2"
     )
 
-RPM_SPEC_STRING_ADD(RPM_SPEC_BUILD_OUTPUT "make translations")
+RPM_SPEC_STRING_ADD(RPM_SPEC_BUILD_OUTPUT "make VERBOSE=1 translations")
 
 RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT pre ""
 "if [ \"$1\" -gt 1 ] ; then
@@ -63,5 +63,4 @@ PACK_RPM()
 RELEASE_FEDORA(fedora)
 # "Off" Warning is displayed if mock is not installed.
 RPM_MOCK_BUILD()
-MANAGE_RELEASE(tag_push release_fedora)
 
