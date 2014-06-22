@@ -1,3 +1,10 @@
+ibus-chewing (1.4.10.1-2) unstable; urgency=medium
+
+  * Use default XKB layout of the system (Closes: #752322)
+  * Add debian/gbp.conf
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@gmail.com>  Sun, 22 Jun 2014 23:50:07 +0800
+
 ibus-chewing (1.4.10.1-1) unstable; urgency=medium
 
   * new upstream release.
