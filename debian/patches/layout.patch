@@ -1,0 +1,14 @@
+Description: Change layout to default
+---
+Bug-Debian: http://bugs.debian.org/752322
+--- ibus-chewing-1.4.10.1.orig/data/chewing.xml.in
++++ ibus-chewing-1.4.10.1/data/chewing.xml.in
+@@ -18,7 +18,7 @@
+ 	    <license>GPLv2+</license>
+ 	    <author>Peng Huang, Ding-Yi Chen</author>
+             <icon>@PRJ_DATA_DIR@/icons/@PROJECT_NAME@.png</icon>
+-	    <layout>us</layout>
++	    <layout>default</layout>
+ 	    <rank>80</rank>
+ 	    @HOTKEYS_XML@
+ 	    @SYMBOL_XML@
