@@ -48,6 +48,7 @@ stamp-h1
 *.rpm
 *.bak
 tags
-*.xml
+data/*.xml
 arch/PKGBUILD
+test-bin/
 

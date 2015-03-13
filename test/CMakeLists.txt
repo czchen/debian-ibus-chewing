@@ -1,0 +1,105 @@
+# Location of library include files
+INCLUDE_DIRECTORIES(
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/bin
+    )
+
+ADD_DEFINITIONS("-DUNIT_TEST=1")
+FOREACH(_d ${IBUS_CHEWING_DEPENDENCIES})
+    INCLUDE_DIRECTORIES(${${_d}_INCLUDE_DIRS})
+    LINK_DIRECTORIES(${${_d}_LIBRARY_DIRS})
+ENDFOREACH(_d ${IBUS_CHEWING_DEPENDENCIES})
+
+SET_SOURCE_FILES_PROPERTIES(${GOB_GENERATED_ibus-chewing-engine} 
+    ${GOB_GENERATED_maker-dialog} PROPERTIES GENERATED true
+    )
+
+#===========================================
+#  MakerDialogUtil
+#
+
+SET(MAKER_DIALOG_UTIL MakerDialogUtil)
+ADD_EXECUTABLE(${MAKER_DIALOG_UTIL}-test
+    ${CMAKE_CURRENT_SOURCE_DIR}/${MAKER_DIALOG_UTIL}-test.c
+    ${CMAKE_SOURCE_DIR}/src/${MAKER_DIALOG_UTIL}.c
+    )
+
+MESSAGE("test GLIB2_LIBRARIES=${GLIB2_LIBRARIES}")
+TARGET_LINK_LIBRARIES(${MAKER_DIALOG_UTIL}-test
+    ${GLIB2_LIBRARIES}
+    )
+
+ADD_TEST("${MAKER_DIALOG_UTIL}"
+    gtester ${CMAKE_CURRENT_BINARY_DIR}/${MAKER_DIALOG_UTIL}-test
+    )
+
+#===========================================
+#  MakerDialogBackend
+#
+
+SET(MAKER_DIALOG_BACKEND MakerDialogBackend)
+ADD_EXECUTABLE(${MAKER_DIALOG_BACKEND}-test
+    ${CMAKE_CURRENT_SOURCE_DIR}/${MAKER_DIALOG_BACKEND}-test.c
+    ${CMAKE_SOURCE_DIR}/src/GSettingsBackend.c
+    ${CMAKE_SOURCE_DIR}/src/MakerDialogBackend.c
+    ${CMAKE_SOURCE_DIR}/src/MakerDialogProperty.c
+    ${CMAKE_SOURCE_DIR}/src/MakerDialogUtil.c
+    )
+
+MESSAGE("test GLIB2_LIBRARIES=${GLIB2_LIBRARIES}")
+TARGET_LINK_LIBRARIES(${MAKER_DIALOG_BACKEND}-test
+    ${GLIB2_LIBRARIES}
+    )
+
+ADD_TEST("${MAKER_DIALOG_BACKEND}"
+    gtester ${CMAKE_CURRENT_BINARY_DIR}/${MAKER_DIALOG_BACKEND}-test
+    )
+
+#===========================================
+#  IBusChewingPreEdit
+#
+
+SET(IBUS_CHEWING_PRE_EDIT IBusChewingPreEdit)
+
+ADD_EXECUTABLE(${IBUS_CHEWING_PRE_EDIT}-test
+    ${CMAKE_CURRENT_SOURCE_DIR}/${IBUS_CHEWING_PRE_EDIT}-test.c
+    ${CMAKE_SOURCE_DIR}/src/IBusChewingUtil.c
+    ${COMMON_SOURCE_FILES}
+    ${CMAKE_SOURCE_DIR}/src/${IBUS_CHEWING_PRE_EDIT}.c
+    )
+
+TARGET_LINK_LIBRARIES(${IBUS_CHEWING_PRE_EDIT}-test
+    ${GLIB2_LIBRARIES}
+    ${CHEWING_LIBRARIES}
+    ${IBUS_LIBRARIES}
+    ${X11_LIBRARIES}
+    )
+
+ADD_TEST("${IBUS_CHEWING_PRE_EDIT}"
+    gtester ${CMAKE_CURRENT_BINARY_DIR}/${IBUS_CHEWING_PRE_EDIT}-test
+    )
+
+
+#===========================================
+#  IBusChewingEngine
+#
+
+SET(IBUS_ENGINE_CHEWING ibus-chewing-engine)
+
+ADD_EXECUTABLE(${IBUS_ENGINE_CHEWING}-test
+    ${CMAKE_CURRENT_SOURCE_DIR}/${IBUS_ENGINE_CHEWING}-test.c
+    ${IBUS_ENGINE_CHEWING_SOURCE_FILES}
+    ${GOB_GENERATED_ibus-chewing-engine}
+    ${GOB_GENERATED_maker-dialog}
+    )
+
+TARGET_LINK_LIBRARIES(${IBUS_ENGINE_CHEWING}-test
+    ${IBUS_ENGINE_CHEWING_LIBRARIES}
+    )
+
+ADD_TEST("${IBUS_ENGINE_CHEWING}"
+    gtester ${CMAKE_CURRENT_BINARY_DIR}/${IBUS_ENGINE_CHEWING}-test
+    )
+
+

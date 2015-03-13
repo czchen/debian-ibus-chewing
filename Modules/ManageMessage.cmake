@@ -19,41 +19,53 @@
 #     corresponding message level.
 #     Default is "[Fatal] ;[Error] ;[Warn] ;[Off] ;[Info1] ;[Info2] ;[Info3] ")
 #
-# Define following macros:
-#   M_MSG(level msg)
+# Define following functions:
+#   M_MSG(<level> <msg>)
 #   - Surpress the message if level is higher than MANAGE_MESSAGE_LEVEL
 #     Otherwise show the message.
-#     Arguments:
-#     + level: level of the message.
-#     + msg: Message to show.
+#     * Parameters:
+#       + level: level of the message.
+#       + msg: Message to show.
 #
+#   M_OUT(<msg>)
+#   - Output the message to stdout
+#     In cmake-2.6.2, MESSAGE(...) output to stderr.
+#     This function make it output to stdout instead.
+#     * Parameters:
+#       + msg: Message to show.
 
-IF(NOT DEFINED _MANAGE_MESSAGE_CMAKE_)
-    SET(_MANAGE_MESSAGE_CMAKE_ "DEFINED")
-    SET(M_FATAL 1)
-    SET(M_ERROR 2)
-    SET(M_WARN 3)
-    SET(M_OFF  4)
-    SET(M_INFO1 5)
-    SET(M_INFO2 6)
-    SET(M_INFO3 7)
-    IF(NOT DEFINED MANAGE_MESSAGE_LABELS)
-	SET(MANAGE_MESSAGE_LABELS
-	    "[Fatal] ;[Error] ;[Warn] ;[Off] ;[Info1] ;[Info2] ;[Info3] ")
-    ENDIF(NOT DEFINED MANAGE_MESSAGE_LABELS)
+IF(DEFINED _MANAGE_MESSAGE_CMAKE_)
+    RETURN()
+ENDIF(DEFINED _MANAGE_MESSAGE_CMAKE_)
+SET(_MANAGE_MESSAGE_CMAKE_ "DEFINED")
 
-    SET(MANAGE_MESSAGE_LEVEL ${M_OFF} CACHE STRING "Message (Verbose) Level")
+SET(M_FATAL 1)
+SET(M_ERROR 2)
+SET(M_WARN 3)
+SET(M_OFF  4)
+SET(M_INFO1 5)
+SET(M_INFO2 6)
+SET(M_INFO3 7)
+IF(NOT DEFINED MANAGE_MESSAGE_LABELS)
+    SET(MANAGE_MESSAGE_LABELS
+	"[Fatal] ;[Error] ;[Warn] ;[Off] ;[Info1] ;[Info2] ;[Info3] ")
+ENDIF(NOT DEFINED MANAGE_MESSAGE_LABELS)
 
-    MACRO(M_MSG level msg)
-	IF(NOT ${level} GREATER ${MANAGE_MESSAGE_LEVEL})
-	    MATH(EXPR _lvl ${level}-1)
-	    LIST(GET MANAGE_MESSAGE_LABELS ${_lvl} _label)
-	    IF(${level} EQUAL 1)
-		MESSAGE(FATAL_ERROR "${_label}${msg}")
-	    ELSE(${level} EQUAL 1)
-		MESSAGE("${_label}${msg}")
-	    ENDIF(${level} EQUAL 1)
-	ENDIF(NOT ${level} GREATER ${MANAGE_MESSAGE_LEVEL})
-    ENDMACRO(M_MSG level msg)
-ENDIF(NOT DEFINED _MANAGE_MESSAGE_CMAKE_)
+SET(MANAGE_MESSAGE_LEVEL ${M_OFF} CACHE STRING "Message (Verbose) Level")
+
+MACRO(M_MSG level)
+    IF(NOT ${level} GREATER ${MANAGE_MESSAGE_LEVEL})
+	MATH(EXPR _lvl ${level}-1)
+	LIST(GET MANAGE_MESSAGE_LABELS ${_lvl} _label)
+	IF(${level} EQUAL 1)
+	    MESSAGE(FATAL_ERROR "${_label}${ARGN}")
+	ELSE(${level} EQUAL 1)
+	    MESSAGE("${_label}${ARGN}")
+	ENDIF(${level} EQUAL 1)
+    ENDIF(NOT ${level} GREATER ${MANAGE_MESSAGE_LEVEL})
+ENDMACRO(M_MSG level)
+
+FUNCTION(M_OUT)
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E echo "${ARGN}")
+ENDFUNCTION(M_OUT)
 
