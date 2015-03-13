@@ -1,17 +1,60 @@
 cmake_minimum_required(VERSION 2.6.2)
 
-# CMP0011: New: Included scripts do automatic cmake_policy PUSH and POP.
-#     Old: cmake_policy in included script affect the caller.
-CMAKE_POLICY(SET CMP0011 OLD)
+# Included scripts do automatic cmake_policy PUSH and POP.
+# OLD: CMake policy in included script will affect the invoker.
+# CMAKE_POLICY(SET CMP0011 OLD)
 
-# Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
+
+####################################################################
+# Find cmake-fedora
+#
+LIST(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/Modules")
+INCLUDE(ManageEnvironmentCommon OPTIONAL RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+
+IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+    # Is cmake-fedora a git submodule?    
+    IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
+	## Create a link if Modules/ does not exists
+	IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora)
+	    IF(EXISTS ${CMAKE_SOURCE_DIR}/.gitmodules)
+                ## cmake-fedora may be a git submodules
+		EXECUTE_PROCESS(COMMAND git submodule init
+		    COMMAND git submodule update
+		    RESULT_VARIABLE gitSubmoduleFailed
+		    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
+		    )	
+	    ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/.gitmodules)
+	ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora)
+
+	IF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
+            ## cmake-fedora is now available as subdirectory, try again
+	    EXECUTE_PROCESS(COMMAND ln -s ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules .)
+	    INCLUDE(ManageEnvironmentCommon RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
+    ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
+ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+
+IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+    MESSAGE(FATAL_ERROR "ManageEnvironmentCommon.cmake is not found in CMAKE_MODULE_PATH.
+Please either:
+    1) Use cmake-fedora as a git submodule:
+       git submodule add https://git.fedorahosted.org/git/cmake-fedora.git 
+    2) Install cmake-fedora from repository:
+       yum -y install cmake-fedora
+    3) Download the source:
+       wget https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
+       tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
+ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+
+GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
+    "${MANAGE_ENVIRONMENT_PATH}" PATH CACHE
+    )
 
 # Whether to build on fedora
 SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "0" CACHE STRING "Enable fedora build")
 
-# Message level M_OFF (4)
-SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
+# Default Message level M_OFF (4)
+SET(MANAGE_MESSAGE_LEVEL 7 CACHE STRING "Message (Verbose) Level")
 
 ####################################################################
 # Project specific information
@@ -44,103 +87,134 @@ SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
 SET(VENDOR "Red Hat, APAC, Inc.")
 SET(LICENSE "GPLv2+")
 SET(PRJ_GROUP "System Environment/Libraries")
-SET(RPM_SPEC_URL "http://code.google.com/p/ibus/")
-SET(RPM_SPEC_SOURCES "http://ibus.googlecode.com/files/%{name}-%{version}-Source.tar.gz")
-SET(HAS_TRANSLATION 1)
-
+SET(RPM_SPEC_URL "https://github.com/definite/${PROJECT_NAME}")
+SET(RPM_SPEC_SOURCES "https://github.com/definite/%{name}/releases/download/%{version}/%{name}-%{version}-Source.tar.gz")
 
 ####################################################################
 # Includes
 #
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR})
-
-# Create a link if Modules/ does not exists
-IF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
-    IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
-	EXECUTE_PROCESS(COMMAND ln -s ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules .)
-    ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
-ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
 
 # Use standard FHS if Fedora build is not enabled
 IF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
-	SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib64" CACHE PATH "Library dir")
-    ELSE(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
-	SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Library dir")
-    ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
     SET(LIBEXEC_DIR "${LIB_DIR}" CACHE PATH "LIBEXEC dir")
 ENDIF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
-INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
-IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
-    MESSAGE(FATAL_ERROR "ManageEnvironment is not found in CMAKE_MODULE_PATH,
-    please:
-    1) git submodule init; git submodule update
-    2) or install cmake-fedora/
-    3) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
-    tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
-ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
-
+INCLUDE(ManageEnvironment)
 MANAGE_CMAKE_POLICY(CMP0017 NEW)
 
 INCLUDE(ManageMessage)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
+INCLUDE(ManageArchive)
+INCLUDE(ManageDependency)
 INCLUDE(ManageFile)
 INCLUDE(ManageSourceVersionControl)
+INCLUDE(ManageTarget)
+INCLUDE(ManageTranslation)
 INCLUDE(ManageUninstall)
-INCLUDE(ManageVariable)
-INCLUDE(ManageDependency)
+
+ENABLE_TESTING()
 
 ####################################################################
 # Dependencies
 #
 
 # Enable GNOME_SHELL support by set the value to 1
-SET_COMPILE_ENV(GNOME_SHELL 1 DISPLAY BOOL "Enable GNOME Shell support")
-IF(IBUS_CHEWING_LOGFILE)
-    ADD_DEFINITIONS(-DIBUS_CHEWING_LOGFILE=${IBUS_CHEWING_LOGFILE})
-ENDIF(IBUS_CHEWING_LOGFILE)
+SET_COMPILE_ENV(GNOME_SHELL 1 CACHE BOOL "Enable GNOME Shell support")
+
+# Enable GCONF2 support by set the value to 1
+SET_COMPILE_ENV(GCONF2_SUPPORT 0 CACHE BOOL "Enable GConf2 support")
+
+# Enable GSETTINGS support by set the value to 1
+SET_COMPILE_ENV(GSETTINGS_SUPPORT 1 CACHE BOOL "Enable GSettings support")
 
 SET(IBUS_MIN_VER "1.3")
 SET(CHEWING_MIN_VER "0.3.3")
-## Requires
-MANAGE_DEPENDENCY(REQUIRES GCONF2 REQUIRED FEDORA_NAME "GConf2")
-MANAGE_DEPENDENCY(REQUIRES GTK2  REQUIRED)
-MANAGE_DEPENDENCY(REQUIRES IBUS VER "${IBUS_MIN_VER}" REQUIRED)
-MANAGE_DEPENDENCY(REQUIRES CHEWING VER "${CHEWING_MIN_VER}" REQUIRED 
-    FEDORA_NAME "libchewing"
+
+########## Package Dependencies ##########
+
+MANAGE_DEPENDENCY(BUILD_REQUIRES CMAKE VER "2.6.2" REQUIRED)
+
+### ibus
+MANAGE_DEPENDENCY(REQUIRES IBUS VER "${IBUS_MIN_VER}" REQUIRED PKG_CONFIG ${IBUS_PKG_CONFIG})
+
+SET(IBUS_PKG_CONFIG "ibus-1.0" CACHE STRING "ibus pkg-config name")
+MANAGE_DEPENDENCY(BUILD_REQUIRES IBUS VER "${IBUS_MIN_VER}" REQUIRED
+    PKG_CONFIG ${IBUS_PKG_CONFIG} DEVEL
     )
 
-SET(BUILD_REQUIRES "" CACHE INTERNAL "Build Requires")
-## Build requires
-MANAGE_DEPENDENCY(BUILD_REQUIRES CMAKE VER "2.6.2" REQUIRED)
+### libchewing
+SET(CHEWING_PACKAGE_NAME "libchewing" CACHE STRING "chewing package name")
+MANAGE_DEPENDENCY(REQUIRES CHEWING VER "${CHEWING_MIN_VER}" REQUIRED 
+    PACKAGE_NAME "${CHEWING_PACKAGE_NAME}"
+    )
+
+SET(CHEWING_DEVEL_PACKAGE_NAME "${CHEWING_PACKAGE_NAME}-devel" CACHE STRING "chewing devel package name")
+SET(CHEWING_PKG_CONFIG "chewing" CACHE STRING "chewing pkg-config name")
+MANAGE_DEPENDENCY(BUILD_REQUIRES CHEWING VER "${CHEWING_MIN_VER}" REQUIRED 
+    PKG_CONFIG ${CHEWING_PKG_CONFIG} 
+    PACKAGE_NAME "${CHEWING_DEVEL_PACKAGE_NAME}"
+    )
+
+M_MSG(${M_INFO1} "CHEWING_VERSION=${CHEWING_VERSION}")
+STRING_SPLIT(chewingVerList "." "${CHEWING_VERSION}")
+LIST(GET chewingVerList 0 CHEWING_VERSION_MAJOR)
+LIST(GET chewingVerList 1 CHEWING_VERSION_MINOR)
+LIST(GET chewingVerList 2 CHEWING_VERSION_PATCH)
+M_MSG(${M_INFO1} "CHEWING_VERSION_MAJOR=${CHEWING_VERSION_MAJOR}")
+M_MSG(${M_INFO1} "CHEWING_VERSION_MINOR=${CHEWING_VERSION_MINOR}")
+M_MSG(${M_INFO1} "CHEWING_VERSION_PATCH=${CHEWING_VERSION_PATCH}")
+ADD_DEFINITIONS("-DCHEWING_VERSION_MAJOR=${CHEWING_VERSION_MAJOR}"
+    "-DCHEWING_VERSION_MINOR=${CHEWING_VERSION_MINOR}"
+    "-DCHEWING_VERSION_PATCH=${CHEWING_VERSION_PATCH}"
+    )
+
+## In case CHEWING_DATADIR is incorrect
+FOREACH(d ${CHEWING_DATADIR} /usr/share/chewing ${CHEWING_LIBDIR}/libchewing)
+    IF(EXISTS "${d}/symbols.dat")
+	SET(CHEWING_DATADIR_REAL "${d}" CACHE STRING "CHEWING_DATADIR_REAL")
+	BREAK()
+    ENDIF()
+ENDFOREACH()
+
+IF("${CHEWING_DATADIR_REAL}" STREQUAL "")
+    M_MSG(${M_ERROR} "Chewing: symbols.dat cannot be found, please reinstall chewing package")
+ENDIF()
+
+M_MSG(${M_INFO1} "CHEWING_DATADIR_REAL=${CHEWING_DATADIR_REAL}")
+SET_COMPILE_ENV(CHEWING_DATADIR_REAL)
+
+### Glib, Gtk and GOB
+## Glib2 is not explicit list as Requires, as it should be pick up by rpm
+SET(GLIB2_PKG_CONFIG "gio-2.0;glib-2.0;gmodule-2.0;gobject-2.0;gthread-2.0" 
+    CACHE STRING "glib2 pkg-config name")
+MANAGE_DEPENDENCY(BUILD_REQUIRES GLIB2 REQUIRED 
+    PKG_CONFIG ${GLIB2_PKG_CONFIG} glib-2.0 DEVEL
+    )
+
+MANAGE_DEPENDENCY(REQUIRES GTK2  REQUIRED)
+SET(GTK2_PKG_CONFIG "gtk+-2.0" CACHE STRING "gtk pkg-config name")
+MANAGE_DEPENDENCY(BUILD_REQUIRES GTK2 REQUIRED 
+    PKG_CONFIG ${GTK2_PKG_CONFIG} DEVEL
+    )
+
 MANAGE_DEPENDENCY(BUILD_REQUIRES GOB2 VER "2.0.16" REQUIRED
     PROGRAM_NAMES "gob2"
     )
-MANAGE_DEPENDENCY(BUILD_REQUIRES GTK2 REQUIRED 
-    PKG_CONFIG "gtk+-2.0" DEVEL
-    )
-MANAGE_DEPENDENCY(BUILD_REQUIRES IBUS VER "${IBUS_MIN_VER}" REQUIRED
-    PKG_CONFIG "ibus-1.0" DEVEL
-    )
-MANAGE_DEPENDENCY(BUILD_REQUIRES CHEWING VER "${CHEWING_MIN_VER}" REQUIRED 
-    PKG_CONFIG "chewing" FEDORA_NAME "libchewing" DEVEL
-    )
-MANAGE_DEPENDENCY(BUILD_REQUIRES X11 REQUIRED
-    PKG_CONFIG "x11" FEDORA_NAME "libX11" DEVEL
-    )
-MANAGE_DEPENDENCY(BUILD_REQUIRES XTST REQUIRED
-    PKG_CONFIG "xtst" FEDORA_NAME "libXtst" DEVEL
-    )
-M_MSG(${M_INFO1} "CHEWING_DATADIR=${CHEWING_DATADIR}")
 
-SET_COMPILE_ENV(CHEWING_DATADIR "${CHEWING_DATADIR}" DISPLAY PATH
-    "Chewing data dir")
+### X11
+SET(X11_PKG_CONFIG "x11" CACHE STRING "x11 pkg-config name")
+MANAGE_DEPENDENCY(BUILD_REQUIRES X11 REQUIRED
+    PKG_CONFIG ${X11_PKG_CONFIG} PACKAGE_NAME "libX11-devel"
+    )
 
 ####################################################################
 # Building
 #
+
+SET_COMPILE_ENV(PROJECT_SCHEMA_ID "org.freedesktop.IBus.Chewing" CACHE STRING "PROJECT_SCHEMA_ID")
+SET_COMPILE_ENV(PROJECT_SCHEMA_DIR "/desktop/ibus/engine/chewing" CACHE STRING "PROJECT_SCHEMA_DIR")
+SET_COMPILE_ENV(PROJECT_SCHEMA_PATH "${PROJECT_SCHEMA_DIR}/" CACHE STRING "PROJECT_SCHEMA_PATH")
 
 # Generate chewing.xml
 SET(SYMBOL_XML "<symbol>&#x9177;</symbol>")
@@ -148,7 +222,7 @@ IF(NOT GNOME_SHELL)
     SET(SYMBOL_XML "<!-- ${SYMBOL_XML} -->")
 ENDIF(NOT GNOME_SHELL)
 
-SET_COMPILE_ENV(CHEWING_HOTKEYS "Control+space")
+SET_COMPILE_ENV(CHEWING_HOTKEYS "Super+space")
 SET(HOTKEYS_XML "<hotkeys>${CHEWING_HOTKEYS}</hotkeys>")
 IF(NOT GNOME_SHELL)
     SET(HOTKEYS_XML "<!-- ${HOTKEYS_XML} -->")
@@ -156,53 +230,50 @@ ENDIF(NOT GNOME_SHELL)
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/data/chewing.xml.in ${CMAKE_BINARY_DIR}/data/chewing.xml)
 # Sub directories
-ADD_SUBDIRECTORY(po)
 ADD_SUBDIRECTORY(src bin)
+ADD_SUBDIRECTORY(po)
+ADD_SUBDIRECTORY(test test-bin)
 
 ####################################################################
 # Installing
 #
 
-MANAGE_SOURCE_VERSION_CONTROL_GIT()
-MANAGE_FILE_INSTALL(PRJ_DOC AUTHORS README ChangeLog COPYING USER-GUIDE)
-MANAGE_FILE_INSTALL(PRJ_DATA icons)
-MANAGE_FILE_INSTALL(DATA ${CMAKE_BINARY_DIR}/data/chewing.xml DEST_SUBDIR "ibus/component")
+INSTALL(FILES AUTHORS README ChangeLog COPYING USER-GUIDE
+    DESTINATION "${PRJ_DOC_DIR}"
+    )
 
-# Schemas
-SET(GCONF_SCHEMAS_FILE ${IBUS_CHEWING_SCHEMAS})
-INCLUDE(ManageGConf)
+INSTALL(FILES ${CMAKE_BINARY_DIR}/data/chewing.xml 
+    DESTINATION "${DATA_DIR}/ibus/component")
+
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/data/ibus-setup-chewing.desktop 
+    DESTINATION "${DATA_DIR}/applications")
+
+INSTALL(DIRECTORY icons
+    DESTINATION "${PRJ_DATA_DIR}"
+    )
+
+MANAGE_SOURCE_VERSION_CONTROL_GIT()
 
 ####################################################################
 # Packing
 #
-INCLUDE(ManageArchive)
-# GOB_GENERATED source codes are now excluded,
-# As Bug 519108 (https://bugzilla.redhat.com/show_bug.cgi?id=519108)
-# Is fixed from Fedora 11
-PACK_SOURCE_ARCHIVE(${RPM_BUILD_SOURCES}
+SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR} CACHE PATH "Source Archive Dir")
+PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
     GITIGNORE ${CMAKE_SOURCE_DIR}/.gitignore
     INCLUDE ${PROJECT_NAME}.pot
     )
 
 INCLUDE(ManageRelease)
 
-SET(SOURCE_ARCHIVE_DIR ".")
-SET(_release_targets "tag_push")
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    SET(RPM_BUILD_SOURCES ${SOURCE_ARCHIVE_DIR})
     ADD_SUBDIRECTORY(rpm)
     LIST(APPEND _releaset_targets "release_fedora")
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-IF(DISTRO_ARCH)
-    ADD_SUBDIRECTORY(arch)
-ENDIF(DISTRO_ARCH)
-MANAGE_RELEASE(${_release_targets})
 
-ADD_CUSTOM_COMMAND(OUTPUT po/${PROJECT_NAME}.pot
-    COMMAND make pot_file
-    )
 
 #####################################################################
-# Hosting Release
+# Hosting
 #
 
 #INCLUDE(ManageUpload)
@@ -210,13 +281,18 @@ ADD_CUSTOM_COMMAND(OUTPUT po/${PROJECT_NAME}.pot
 #    COMMENT "Uploading all files"
 #    )
 
-#MANAGE_UPLOAD_CMD(scp src UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
-#ADD_DEPENDENCIES(upload upload_src)
-
+####################################################################
+# Custom
+#
 
 ####################################################################
-# Test Suites.
+# Release
 #
-ENABLE_TESTING()
 
+INCLUDE(ManageRelease)
+SET(releaseTarget "tag_push")
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    LIST(APPEND releaseTargets release_fedora)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+MANAGE_RELEASE(${releaseTargets})
 

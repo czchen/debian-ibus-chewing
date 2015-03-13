@@ -1,5 +1,6 @@
-PRJ_VER=1.4.10.1
-SUMMARY=Resolves Bug 1054937
-REDHAT_BUGZILLA=1054937
+PRJ_VER=1.4.12
+SUMMARY=Fix the GitHub download link
+REDHAT_BUGZILLA=
 [Changes]
-- Resolves Bug 1054937 - Broken %defattr in ibus-chewing
+- Fix the GitHub download link
+

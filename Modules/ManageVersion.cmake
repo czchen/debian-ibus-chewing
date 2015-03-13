@@ -1,194 +1,170 @@
-# - Modules for manipulate version and ChangeLog
+# - Manage Version, ChangeLog and project information (prj_info.cmake)
 #
-# Includes:
-#   ManageVariable
-#   DateTimeFormat
+# Included Modules:
+#   - DateTimeFormat
+#   - ManageString
+#   - ManageVariable
 #
-# Included by:
-#   PackSource
+# Set cache for following variables:
+#   - CHANGELOG_FILE: Location of ChangeLog.
+#     Default: ${CMAKE_SOURCE_DIR}/ChangeLog
+#   - PRJ_INFO_CMAKE_FILE: Path to prj_info.cmake
+#     Default: ${CMAKE_FEDORA_TMP_DIR}/prj_info.cmake
 #
 # Defines following functions:
-#   MANAGE_CHANGELOG_SPLIT(changeLogItemVar prevVar changeLogFile ver)
-#   - Split the changeLog into two parts:
-#     1. changeLogItemVar: Current version, that is,
-#        ChangeLog under the version specified by "ver".
-#     2. prev: Previous version.
-#        Note that version info are returned.
-#     Arguments:
-#     + changeLogItemVar: Variable hold th
-#
-#   RELEASE_NOTES_READ_FILE([releaseFile])
+#   RELEASE_NOTES_READ_FILE([<release_file>])
 #   - Load release file information.
-#     Arguments:
-#     + releaseFile: (Optional) release file to be read.
-#       This file should contain following definition:
-#       - PRJ_VER: Release version.
-#       - SUMMARY: Summary of the release. Will be output as CHANGE_SUMMARY.
-#       - Section [Changes]:
-#         Changes of this release list below the section tag.
-#       Default:RELEASE-NOTES.txt
-#     This macro outputs following files:
-#     + ChangeLog: Log of changes.
-#       Depends on ChangeLog.prev and releaseFile.
-#     This macro sets following variables:
-#     + PRJ_VER: Release version.
-#     + CHANGE_SUMMARY: Summary of changes.
-#     + CHANGELOG_ITEMS: Lines below the [Changes] tag.
-#     + RELEASE_NOTES_FILE: The loaded release file.
-#     + PRJ_DOC_DIR: Documentation for the project.
-#       Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
+#     * Parameters:
+#       + release_file: (Optional) release file to be read.
+#         This file should contain following definition:
+#         - PRJ_VER: Release version.
+#         - SUMMARY: Summary of the release. Will be output as CHANGE_SUMMARY.
+#         - Section [Changes]:
+#           Changes of this release list below the section tag.
+#         Default:${CMAKE_SOURCE_DIR}/RELEASE-NOTES.txt
+#     * Values to cached:
+#       + PRJ_VER: Version.
+#       + CHANGE_SUMMARY: Summary of changes.
+#       + RELEASE_NOTES_FILE: The loaded release file.
+#     * Compile flags defined:
+#       + PRJ_VER: Project version.
 #
+#   PRJ_INFO_CMAKE_WRITE()
+#   - Write the project infomation to prj_info.cmake.
+#
+#   PRJ_INFO_CMAKE_APPEND(<var>)
+#   - Append  var to prj_info.cmake.
+#     * Parameters:
+#       + var: Variable to be append to prj_info.cmake.
+#
+# Defines following macros:
+#   PRJ_INFO_CMAKE_READ(<prj_info_file>)
+#   - Read prj_info.cmake and get the info of projects.
+#     This macro is meant to be run by ManageChangeLogScript script.
+#     So normally no need to call it manually.
+#     * Parameters:
+#       + prj_info_file: File name to be appended to.
+#         Default: ${PRJ_INFO_CMAKE_FILE}, otherwise ${CMAKE_FEDORA_TMP_DIR}/prj_info.cmake.
+#     * Targets:
+#       + changelog: ChangeLog update.
 
-IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
-    SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
-    INCLUDE(ManageMessage)
-    INCLUDE(ManageVariable)
+IF(DEFINED _MANAGE_VERSION_CMAKE_)
+    RETURN()
+ENDIF(DEFINED _MANAGE_VERSION_CMAKE_)
+SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
+INCLUDE(ManageMessage)
+INCLUDE(ManageVariable)
+INCLUDE(ManageFile)
 
-    SET(CHANGELOG_FILE "${CMAKE_SOURCE_DIR}/ChangeLog" CACHE FILEPATH
-	"ChangeLog")
-    SET(CHANGELOG_PREV_FILE "${CMAKE_SOURCE_DIR}/ChangeLog.prev" CACHE FILEPATH
-	"ChangeLog.prev")
+SET(PRJ_INFO_VARIABLE_LIST 
+    PROJECT_NAME PRJ_VER PRJ_SUMMARY SUMMARY_TRANSLATIONS
+    PRJ_DESCRIPTION DESCRIPTION_TRANSLATIONS 
+    LICENSE PRJ_GROUP MAINTAINER AUTHORS VENDER
+    BUILD_ARCH RPM_SPEC_URL RPM_SPEC_SOURCES
+    )
 
-    ADD_CUSTOM_TARGET(changelog_prev_update
-	COMMAND ${CMAKE_COMMAND} -E copy ${CHANGELOG_FILE} ${CHANGELOG_PREV_FILE}
-	DEPENDS ${CHANGELOG_FILE}
-	COMMENT "${CHANGELOG_FILE} are saving as ${CHANGELOG_PREV_FILE}"
+SET(CHANGELOG_FILE "${CMAKE_SOURCE_DIR}/ChangeLog" CACHE FILEPATH "ChangeLog")
+SET(PRJ_INFO_CMAKE_FILE "${CMAKE_FEDORA_TMP_DIR}/prj_info.cmake" CACHE INTERNAL "prj_info.cmake")
+
+FUNCTION(PRJ_INFO_CMAKE_APPEND var)
+    IF(NOT "${${var}}" STREQUAL "")
+	STRING_ESCAPE_BACKSLASH(_str "${${var}}")
+	STRING_ESCAPE_DOLLAR(_str "${_str}")
+	STRING_ESCAPE_QUOTE(_str "${_str}")
+	FILE(APPEND ${PRJ_INFO_CMAKE_FILE} "SET(${var} \"${_str}\")\n")
+    ENDIF(NOT "${${var}}" STREQUAL "")
+ENDFUNCTION(PRJ_INFO_CMAKE_APPEND)
+
+MACRO(PRJ_INFO_CMAKE_READ prj_info_file)
+    IF("${prj_info_file}" STREQUAL "")
+	M_MSG(${M_EROR} "Requires prj_info.cmake")
+    ENDIF()
+    INCLUDE(${prj_info_file} RESULT_VARIABLE prjInfoPath)
+    IF("${prjInfoPath}" STREQUAL "NOTFOUND")
+	M_MSG(${M_ERROR} "Failed to read ${prj_info_file}")
+    ENDIF()
+ENDMACRO(PRJ_INFO_CMAKE_READ)
+
+FUNCTION(PRJ_INFO_CMAKE_WRITE)
+    FILE(REMOVE "${PRJ_INFO_CMAKE_FILE}")
+    FOREACH(_v ${PRJ_INFO_VARIABLE_LIST})
+	PRJ_INFO_CMAKE_APPEND(${_v})
+    ENDFOREACH(_v)
+ENDFUNCTION(PRJ_INFO_CMAKE_WRITE prj_info_file)
+
+## All variable should be specified eplicitly
+FUNCTION(RELEASE_NOTES_FILE_EXTRACT_CHANGELOG_CURRENT var releaseNoteFile )
+    FILE(STRINGS "${releaseNoteFile}" _releaseLines)
+    SET(_changeItemSection 0)
+    SET(_changeLogThis "")
+    ## Parse release file
+    INCLUDE(ManageString)
+    FOREACH(_line ${_releaseLines})
+	IF(_changeItemSection)
+	    ### Append lines in change section
+	    STRING_APPEND(_changeLogThis "${_line}" "\n")
+	ELSEIF("${_line}" MATCHES "^[[]Changes[]]")
+	    ### Start the change section
+	    SET(_changeItemSection 1)
+	ENDIF()
+    ENDFOREACH(_line ${_releaseLines})
+    SET(${var} "${_changeLogThis}" PARENT_SCOPE)
+ENDFUNCTION(RELEASE_NOTES_FILE_EXTRACT_CHANGELOG_CURRENT)
+
+FUNCTION(RELEASE_NOTES_READ_FILES_VARIABLES releaseNoteFile )
+    FILE(STRINGS "${RELEASE_NOTES_FILE}" _release_lines)
+
+    SET(CHANGELOG_CURRENT_FILE "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.current" CACHE INTERNAL "ChangeLog.current")
+    ## Parse release file
+    FOREACH(_line ${_release_lines})
+	IF("${_line}" MATCHES "^[[]Changes[]]")
+	    ### Start the change section
+	    BREAK()
+	ELSEIF(NOT "${_line}" MATCHES "^\\s*#")
+	    SETTING_STRING_GET_VARIABLE(var value "${_line}")
+	    #MESSAGE("var=${var} value=${value}")
+	    IF(var STREQUAL "PRJ_VER")
+		SET_COMPILE_ENV(${var} "${value}" CACHE STRING "Project Version" FORCE)
+	    ELSEIF(var STREQUAL "SUMMARY")
+		SET(CHANGE_SUMMARY "${value}" CACHE STRING "Change Summary" FORCE)
+	    ELSE(var STREQUAL "PRJ_VER")
+		SET(${var} "${value}" CACHE STRING "${var}" FORCE)
+	    ENDIF(var STREQUAL "PRJ_VER")
+	ENDIF("${_line}" MATCHES "^[[]Changes[]]")
+    ENDFOREACH(_line)
+ENDFUNCTION(RELEASE_NOTES_READ_FILES_VARIABLES)
+
+FUNCTION(RELEASE_NOTES_READ_FILE)
+    FOREACH(_arg ${ARGN})
+	IF(EXISTS ${_arg})
+	    SET(RELEASE_NOTES_FILE ${_arg} CACHE FILEPATH "Release File")
+	ENDIF(EXISTS ${_arg})
+    ENDFOREACH(_arg ${ARGN})
+
+    IF(NOT RELEASE_NOTES_FILE)
+	SET(RELEASE_NOTES_FILE "${CMAKE_SOURCE_DIR}/RELEASE-NOTES.txt" CACHE FILEPATH "Release Notes")
+    ENDIF(NOT RELEASE_NOTES_FILE)
+
+    FILE(STRINGS "${RELEASE_NOTES_FILE}" _release_lines)
+
+    SET(_changeItemSection 0)
+    SET(CHANGELOG_CURRENT_FILE "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.current" CACHE INTERNAL "ChangeLog.current")
+
+    ## Parse release file
+    RELEASE_NOTES_READ_FILES_VARIABLES(${RELEASE_NOTES_FILE})
+
+    PRJ_INFO_CMAKE_WRITE()
+
+    ADD_CUSTOM_TARGET(changelog
+	COMMAND ${CMAKE_COMMAND} -Dcmd=update 
+	-Dchangelog=${CHANGELOG_FILE}
+	-Drelease=${RELEASE_NOTES_FILE}
+	-Dprj_info=${PRJ_INFO_CMAKE_FILE}
+	-Dcmakecache=${CMAKE_BINARY_DIR}/CMakeCache.txt
+	-Dcmake_source_dir=${CMAKE_SOURCE_DIR}
+	-P ${CMAKE_FEDORA_MODULE_DIR}/ManageChangeLogScript.cmake
+	DEPENDS ${RELEASE_NOTES_FILE}
+	COMMENT "changelog: ${CHANGELOG_FILE}"
 	)
-
-    FUNCTION(MANAGE_CHANGELOG_SPLIT changeLogItemVar prevVar changeLogFile ver)
-	SET(_changeLogFileBuf "")
-	SET(_this "")
-	SET(_prev "")
-	IF(EXISTS "${changeLogFile}")
-	    SET(_isThis 0)
-	    SET(_isPrev 0)
-	    # Use this instead of FILE(READ is to avoid error when reading '\'
-	    # character.
-	    EXECUTE_PROCESS(COMMAND cat "${changeLogFile}"
-		OUTPUT_VARIABLE _changeLogFileBuf
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-	    #MESSAGE("# _changeLogFileBuf=|${_changeLogFileBuf}|")
-	    STRING_SPLIT(_lines "\n" "${_changeLogFileBuf}" ALLOW_EMPTY)
-	    #MESSAGE("# _lines=|${_lines}|")
-
-	    LIST(LENGTH _lines _lineCount)
-	    MATH(EXPR _lineCount ${_lineCount}-1)
-	    FOREACH(_i RANGE ${_lineCount})
-		LIST(GET _lines ${_i} _line)
-		#MESSAGE("# _i=${_i} _line=${_line}")
-		STRING(REGEX MATCH "^\\* [A-Za-z]+ [A-Za-z]+ [0-9]+ [0-9]+ .+ <.+> - (.*)$" _match  "${_line}")
-		IF("${_match}" STREQUAL "")
-		    # Not a version line
-		    IF(_isThis)
-			STRING_APPEND(_this "${_line}" "\n")
-		    ELSEIF(_isPrev)
-			STRING_APPEND(_prev "${_line}" "\n")
-		    ELSE(_isThis)
-			M_MSG(${M_ERROR} "ChangeLog: Cannot distinguish version for line :${_line}")
-		    ENDIF(_isThis)
-		ELSE("${_match}" STREQUAL "")
-		    # Is a version line
-		    SET(_cV "${CMAKE_MATCH_1}")
-		    IF("${_cV}" STREQUAL "${ver}")
-			SET(_isThis 1)
-			SET(_isPrev 0)
-		    ELSE("${_cV}" STREQUAL "${ver}")
-			SET(_isThis 0)
-			SET(_isPrev 1)
-			STRING_APPEND(_prev "${_line}" "\n")
-		    ENDIF("${_cV}" STREQUAL "${ver}")
-		ENDIF("${_match}" STREQUAL "")
-	    ENDFOREACH(_i RANGE _lineCount)
-	ENDIF(EXISTS "${changeLogFile}")
-	SET(${changeLogItemVar} "${_this}" PARENT_SCOPE)
-	SET(${prevVar} "${_prev}" PARENT_SCOPE)
-    ENDFUNCTION(MANAGE_CHANGELOG_SPLIT changeLogItemVar prevVar changeLogFile ver)
-
-    FUNCTION(MANAGE_CHANGELOG_UPDATE changeLogFile ver newChangeStr)
-	SET(CHANGELOG_ITEM_FILE "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.Item"
-	    CACHE INTERNAL "ChangeLog Item file")
-	MANAGE_CHANGELOG_SPLIT(changeLogItemVar prevVar "${changeLogFile}" "${ver}")
-
-	INCLUDE(DateTimeFormat)
-
-	FILE(WRITE ${CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}\n")
-	IF (newChangeStr)
-	    FILE(WRITE ${CHANGELOG_ITEM_FILE} "${newChangeStr}")
-	    FILE(APPEND ${CHANGELOG_FILE} "${newChangeStr}\n\n")
-	ELSE(newChangeStr)
-	    FILE(WRITE ${CHANGELOG_ITEM_FILE} "${changeLogItemVar}")
-	    FILE(APPEND ${CHANGELOG_FILE} "${changeLogItemVar}\n\n")
-	ENDIF(newChangeStr)
-	FILE(APPEND ${CHANGELOG_FILE} "${prevVar}")
-    ENDFUNCTION(MANAGE_CHANGELOG_UPDATE changeLogFile ver newChangeStr)
-
-    FUNCTION(RELEASE_NOTES_READ_FILE)
-	INCLUDE(ManageString)
-	SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
-	FOREACH(_arg ${ARGN})
-	    IF(EXISTS ${_arg})
-		SET(RELEASE_NOTES_FILE ${_arg} CACHE FILEPATH "Release File")
-	    ENDIF(EXISTS ${_arg})
-	ENDFOREACH(_arg ${ARGN})
-
-	IF(NOT RELEASE_NOTES_FILE)
-	    SET(RELEASE_NOTES_FILE "RELEASE-NOTES.txt" CACHE FILEPATH "Release Notes")
-	ENDIF(NOT RELEASE_NOTES_FILE)
-
-	FILE(STRINGS "${RELEASE_NOTES_FILE}" _release_lines)
-
-	SET(_changeItemSection 0)
-	SET(CHANGELOG_ITEMS "")
-	## Parse release file
-	FOREACH(_line ${_release_lines})
-	    IF(_changeItemSection)
-		### Append lines in change section
-		STRING_APPEND(CHANGELOG_ITEMS "${_line}" "\n")
-	    ELSEIF("${_line}" MATCHES "^[[]Changes[]]")
-		### Start the change section
-		SET(_changeItemSection 1)
-	    ELSE(_changeItemSection)
-		### Variable Setting section
-		SETTING_STRING_GET_VARIABLE(var value "${_line}")
-		#MESSAGE("var=${var} value=${value}")
-		IF(NOT var MATCHES "#")
-		    IF(var STREQUAL "PRJ_VER")
-			SET_COMPILE_ENV(${var} "${value}" CACHE STRING "Project Version" FORCE)
-		    ELSEIF(var STREQUAL "SUMMARY")
-			SET(CHANGE_SUMMARY "${value}" CACHE STRING "Change Summary" FORCE)
-		    ELSE(var STREQUAL "PRJ_VER")
-			SET(${var} "${value}" CACHE STRING "${var}" FORCE)
-		    ENDIF(var STREQUAL "PRJ_VER")
-		ENDIF(NOT var MATCHES "#")
-	    ENDIF(_changeItemSection)
-	ENDFOREACH(_line ${_release_line})
-
-
-	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"
-	    CACHE PATH "Project docdir prefix" FORCE
-	    )
-
-	MANAGE_CHANGELOG_UPDATE(${CHANGELOG_FILE} ${PRJ_VER} "${CHANGELOG_ITEMS}")
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${CHANGELOG_ITEM_FILE}
-	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-	    DEPENDS ${RELEASE_NOTE_FILE}
-	    VERBATIM
-	    )
-	    
-	ADD_CUSTOM_COMMAND(OUTPUT ${CHANGELOG_FILE}
-	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-	    DEPENDS ${RELEASE_NOTES_FILE}
-	    COMMENT "Building ${CHANGELOG_FILE}"
-	    VERBATIM
-	    )
-
-	ADD_CUSTOM_TARGET(changelog ALL
-	    DEPENDS ${CHANGELOG_FILE}
-	    VERBATIM
-	    )
-
-    ENDFUNCTION(RELEASE_NOTES_READ_FILE)
-ENDIF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
+ENDFUNCTION(RELEASE_NOTES_READ_FILE)
 
