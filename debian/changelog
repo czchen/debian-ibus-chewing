@@ -1,3 +1,10 @@
+ibus-chewing (1.4.14-1) UNRELEASED; urgency=medium
+
+  * new upstream release.
+  * Remove unused patch.
+
+ -- ChangZhuo Chen (陳昌倬) <czchen@gmail.com>  Fri, 13 Mar 2015 23:08:55 +0800
+
 ibus-chewing (1.4.10.1-2) unstable; urgency=medium
 
   * Use default XKB layout of the system (Closes: #752322)
