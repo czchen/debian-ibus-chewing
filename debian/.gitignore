@@ -1,0 +1,8 @@
+/*.debhelper
+/*.log
+/*.substvars
+/files
+
+/ibus-chewing/
+/ibus-chewing-dbg/
+/tmp
