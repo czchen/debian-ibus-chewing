@@ -32,6 +32,8 @@ override_dh_auto_configure:
 override_dh_auto_install:
 	cp $(CURDIR)/debian/bak/ChangeLog $(CURDIR)/
 	dh_auto_install
-	rm -rf $(CURDIR)/debian/tmp/usr/share/doc/ibus-chewing-*
+	-rm -r $(CURDIR)/debian/tmp/usr/share/doc/ibus-chewing-*
+	-rm -f $(CURDIR)/debian/tmp/usr/share/doc/ibus-chewing/COPYING
+	-rm -f $(CURDIR)/debian/tmp/usr/share/doc/ibus-chewing/ChangeLog
 
 override_dh_auto_test:
