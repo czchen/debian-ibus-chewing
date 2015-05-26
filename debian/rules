@@ -5,7 +5,7 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 CFLAGS+=$(CPPFLAGS)
 
 %:
-	dh $@
+	dh $@ --dbg-package=ibus-chewing-dbg
 
 override_dh_auto_clean:
 	dh_auto_clean
@@ -34,5 +34,4 @@ override_dh_auto_install:
 	dh_auto_install
 	rm -rf $(CURDIR)/debian/tmp/usr/share/doc/ibus-chewing-*
 
-override_dh_strip:
-	dh_strip --dbg-package=ibus-chewing-dbg
+override_dh_auto_test:
