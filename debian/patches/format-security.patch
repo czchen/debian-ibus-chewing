@@ -1,0 +1,22 @@
+--- a/src/MakerDialogUtil.c
++++ b/src/MakerDialogUtil.c
+@@ -120,7 +120,7 @@
+ 	g_snprintf(result, MAKER_DIALOG_VALUE_LENGTH, "%d", intValue);
+ 	break;
+     case G_TYPE_STRING:
+-	g_snprintf(result, MAKER_DIALOG_VALUE_LENGTH,
++	g_snprintf(result, MAKER_DIALOG_VALUE_LENGTH, "%s",
+ 		   g_value_get_string(value));
+ 	break;
+     default:
+--- a/src/GSettingsBackend.c
++++ b/src/GSettingsBackend.c
+@@ -134,7 +134,7 @@
+ 	g_snprintf(result, MAKER_DIALOG_VALUE_LENGTH, "%ld",
+ 		   g_variant_get_int64(gVar));
+     } else if (g_variant_type_is_subtype_of(gVType, G_VARIANT_TYPE_STRING)) {
+-	g_snprintf(result, MAKER_DIALOG_VALUE_LENGTH,
++	g_snprintf(result, MAKER_DIALOG_VALUE_LENGTH, "%s",
+ 		   g_variant_get_string(gVar, NULL));
+     }
+     return result;
