@@ -9,7 +9,7 @@ CFLAGS+=$(CPPFLAGS)
 
 override_dh_auto_clean:
 	dh_auto_clean
-	rm -rf CMakeFiles NO_PACK Testing bin po/CMakeFiles po/zanata.xml $(CURDIR)/po/*.gmo
+	-rm -r CMakeFiles NO_PACK Testing bin po/CMakeFiles po/zanata.xml $(CURDIR)/po/*.gmo $(CURDIR)/test-bin $(CURDIR)/po/CTestTestfile.cmake
 	-cp $(CURDIR)/debian/bak/po/*.po $(CURDIR)/po/
 	-cp $(CURDIR)/debian/bak/ChangeLog $(CURDIR)/
 
@@ -26,6 +26,8 @@ override_dh_auto_configure:
 		-DCMAKE_SKIP_RPATH=ON \
 		-DLIBEXEC_DIR=/usr/lib/ibus \
 		-DSYSCONF_INSTALL_DIR=/usr/share \
+		-DCMAKE_MODULE_PATH=/usr/share/cmake/Modules \
+		$(NULL)
 
 override_dh_auto_install:
 	cp $(CURDIR)/debian/bak/ChangeLog $(CURDIR)/
