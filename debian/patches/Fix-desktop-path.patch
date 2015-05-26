@@ -28,7 +28,7 @@ Forwarded: <no|not-needed|url proving that it has been forwarded>
 +Name[zh_TW]=IBus 酷音偏好設定
 +Comment=Set IBus Chewing Preferences
 +Comment[zh_TW]=設定 IBus 酷音偏好
-+Exec=@LIBEXEC_DIR/ibus-setup-chewing
++Exec=@LIBEXEC_DIR@/ibus-setup-chewing
 +Icon=ibus-setup-chewing
 +NoDisplay=true
 +Terminal=false
