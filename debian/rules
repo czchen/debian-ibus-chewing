@@ -9,8 +9,9 @@ CFLAGS+=$(CPPFLAGS)
 
 override_dh_auto_clean:
 	dh_auto_clean
-	-rm -r CMakeFiles NO_PACK Testing bin po/CMakeFiles po/zanata.xml $(CURDIR)/po/*.gmo $(CURDIR)/test-bin $(CURDIR)/po/CTestTestfile.cmake
+	-rm -r CMakeFiles NO_PACK Testing bin po/CMakeFiles $(CURDIR)/po/*.gmo $(CURDIR)/test-bin $(CURDIR)/po/CTestTestfile.cmake
 	-cp $(CURDIR)/debian/bak/po/*.po $(CURDIR)/po/
+	-cp $(CURDIR)/debian/bak/po/zanata.xml $(CURDIR)/po/
 	-cp $(CURDIR)/debian/bak/ChangeLog $(CURDIR)/
 
 override_dh_auto_build:
@@ -20,6 +21,7 @@ override_dh_auto_build:
 override_dh_auto_configure:
 	mkdir -p $(CURDIR)/debian/bak/po
 	cp $(CURDIR)/po/*.po $(CURDIR)/debian/bak/po
+	cp $(CURDIR)/po/zanata.xml $(CURDIR)/debian/bak/po
 	cp $(CURDIR)/ChangeLog $(CURDIR)/debian/bak
 	cmake -DCMAKE_INSTALL_PREFIX="/usr" \
 		-DCMAKE_VERBOSE_MAKEFILE=ON \
