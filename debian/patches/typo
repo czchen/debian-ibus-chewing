@@ -1,0 +1,14 @@
+Description: Typo
+---
+Forwarded: https://github.com/definite/ibus-chewing/pull/55
+--- ibus-chewing-1.4.14.orig/src/MakerDialogUtil.c
++++ ibus-chewing-1.4.14/src/MakerDialogUtil.c
+@@ -87,7 +87,7 @@ gboolean mkdg_g_value_reset(GValue * val
+     }
+     if (G_VALUE_TYPE(value) != type) {
+ 	if (!overwrite) {
+-	    mkdg_log(ERROR, "mkdg_g_value_reset(): type incompatable");
++	    mkdg_log(ERROR, "mkdg_g_value_reset(): type incompatible");
+ 	    return FALSE;
+ 	}
+     }
