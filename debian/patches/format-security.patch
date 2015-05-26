@@ -1,3 +1,6 @@
+Fix format-security warnings
+---
+Forwarded: https://github.com/definite/ibus-chewing/pull/54
 --- a/src/MakerDialogUtil.c
 +++ b/src/MakerDialogUtil.c
 @@ -120,7 +120,7 @@
